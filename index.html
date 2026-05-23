@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>Agenda · reports & studies</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f8fb;
+    --surface: #ffffff;
+    --ink: #0f172a;
+    --ink-2: #334155;
+    --muted: #64748b;
+    --muted-2: #94a3b8;
+    --line: #e2e8f0;
+    --line-2: #cbd5e1;
+    --accent: #2563eb;
+    --accent-soft: #eff4ff;
+    --warn-bg: #fff7ed;
+    --warn-line: #fed7aa;
+    --warn-ink: #9a3412;
+    --mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, Menlo, monospace;
+  }
+
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; }
+  body {
+    background: var(--bg);
+    color: var(--ink);
+    font-family: Inter, system-ui, -apple-system, sans-serif;
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .page {
+    max-width: 760px;
+    margin: 0 auto;
+    padding: 56px 28px 96px;
+  }
+
+  /* ── header ───────────────────────────────────────────── */
+  header { margin-bottom: 32px; }
+  .title {
+    font-size: 32px;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    color: var(--ink);
+    margin: 0;
+  }
+  .subtitle {
+    color: var(--muted);
+    font-size: 14px;
+    margin-top: 6px;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .subtitle .dot { color: var(--line-2); }
+  .subtitle .count {
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--muted-2);
+  }
+  .subtitle .refresh {
+    margin-left: auto;
+    border: 0;
+    background: transparent;
+    color: var(--muted-2);
+    cursor: pointer;
+    font: inherit;
+    font-size: 12px;
+    padding: 4px 8px;
+    border-radius: 6px;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+  }
+  .subtitle .refresh:hover { background: var(--surface); color: var(--ink-2); }
+  .subtitle .refresh svg { width: 12px; height: 12px; }
+
+  /* ── search ───────────────────────────────────────────── */
+  .search {
+    position: relative;
+    margin: 24px 0 8px;
+  }
+  .search input {
+    width: 100%;
+    height: 40px;
+    padding: 0 14px 0 38px;
+    border: 1px solid var(--line);
+    border-radius: 8px;
+    background: var(--surface);
+    font: inherit;
+    font-size: 14px;
+    color: var(--ink);
+    transition: border-color .15s, box-shadow .15s;
+  }
+  .search input:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-soft);
+  }
+  .search input::placeholder { color: var(--muted-2); }
+  .search svg.icon {
+    position: absolute;
+    left: 13px;
+    top: 50%;
+    transform: translateY(-50%);
+    color: var(--muted-2);
+    pointer-events: none;
+  }
+  .search .clear {
+    position: absolute;
+    right: 8px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 24px;
+    height: 24px;
+    border: 0;
+    background: transparent;
+    color: var(--muted-2);
+    cursor: pointer;
+    border-radius: 4px;
+    display: none;
+    align-items: center;
+    justify-content: center;
+  }
+  .search.has-value .clear { display: flex; }
+  .search .clear:hover { background: var(--line); color: var(--ink-2); }
+
+  /* ── state messages ──────────────────────────────────── */
+  .state {
+    padding: 48px 0;
+    text-align: center;
+    color: var(--muted);
+    font-size: 13px;
+    display: none;
+  }
+  .state.show { display: block; }
+  .state code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    padding: 1px 6px;
+    border-radius: 4px;
+    color: var(--ink-2);
+  }
+
+  .banner {
+    margin: 16px 0 0;
+    padding: 12px 14px;
+    background: var(--warn-bg);
+    border: 1px solid var(--warn-line);
+    color: var(--warn-ink);
+    border-radius: 8px;
+    font-size: 13px;
+    line-height: 1.5;
+    display: none;
+  }
+  .banner.show { display: block; }
+  .banner code {
+    font-family: var(--mono);
+    font-size: 12px;
+    background: rgba(154, 52, 18, .08);
+    padding: 1px 5px;
+    border-radius: 3px;
+  }
+  .banner strong { font-weight: 600; }
+
+  /* ── timeline ─────────────────────────────────────────── */
+  .timeline { margin-top: 28px; }
+  .month {
+    display: grid;
+    grid-template-columns: 88px 1fr;
+    gap: 20px;
+    padding: 12px 0 24px;
+  }
+  .month-label {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--accent);
+    text-transform: uppercase;
+    letter-spacing: 0.08em;
+    padding-top: 4px;
+    position: relative;
+  }
+  .month-label::after {
+    content: '';
+    position: absolute;
+    top: 12px;
+    left: 0;
+    width: 4px;
+    height: 4px;
+    border-radius: 50%;
+    background: var(--accent);
+    margin-top: -2px;
+  }
+  .month-items {
+    border-left: 1px solid var(--line);
+    padding-left: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  /* ── report card ──────────────────────────────────────── */
+  .report {
+    display: grid;
+    grid-template-columns: 64px 1fr auto;
+    gap: 14px;
+    align-items: flex-start;
+    padding: 14px 12px;
+    border-radius: 8px;
+    text-decoration: none;
+    color: inherit;
+    transition: background .12s;
+    margin: 0 -12px;
+  }
+  .report:hover { background: var(--surface); }
+  .report:hover .report-title { color: var(--accent); }
+
+  .thumb {
+    width: 64px;
+    height: 64px;
+    border-radius: 6px;
+    background: var(--surface);
+    border: 1px solid var(--line);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    overflow: hidden;
+    color: var(--muted-2);
+  }
+  .thumb img { width: 100%; height: 100%; object-fit: cover; }
+  .thumb.placeholder {
+    background: repeating-linear-gradient(135deg, #f8fafc 0 6px, #eef2f7 6px 7px);
+  }
+  .thumb.placeholder::after {
+    content: attr(data-letter);
+    font-family: var(--mono);
+    font-size: 18px;
+    font-weight: 500;
+    color: var(--muted-2);
+  }
+
+  .report-body { min-width: 0; }
+  .report-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--ink);
+    margin: 2px 0 0;
+    line-height: 1.35;
+    transition: color .12s;
+  }
+  .report-summary {
+    font-size: 13px;
+    color: var(--muted);
+    margin-top: 4px;
+    line-height: 1.45;
+  }
+  .report-tags {
+    margin-top: 8px;
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+  }
+  .tag {
+    font-family: var(--mono);
+    font-size: 10.5px;
+    padding: 2px 8px;
+    border-radius: 99px;
+    background: var(--accent-soft);
+    color: var(--accent);
+    line-height: 1.4;
+  }
+  .report-date {
+    font-family: var(--mono);
+    font-size: 11px;
+    color: var(--muted-2);
+    padding-top: 4px;
+    white-space: nowrap;
+  }
+
+  /* ── skeleton (loading) ──────────────────────────────── */
+  .skeleton .skel-line {
+    background: linear-gradient(90deg, var(--line) 0%, #eef2f7 50%, var(--line) 100%);
+    background-size: 200% 100%;
+    animation: shimmer 1.4s linear infinite;
+    border-radius: 4px;
+  }
+  @keyframes shimmer {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+  .skeleton .month-label {
+    color: transparent;
+  }
+  .skeleton .month-label::after {
+    background: var(--line-2);
+  }
+  .skeleton .thumb {
+    background: var(--line);
+    border-color: var(--line);
+  }
+  .skeleton .thumb.placeholder { background: var(--line); }
+  .skeleton .thumb.placeholder::after { content: ''; }
+
+  /* ── footer ───────────────────────────────────────────── */
+  footer {
+    margin-top: 56px;
+    padding-top: 20px;
+    border-top: 1px solid var(--line);
+    color: var(--muted-2);
+    font-size: 12px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+  footer .mono { font-family: var(--mono); }
+
+  /* ── responsive ───────────────────────────────────────── */
+  @media (max-width: 560px) {
+    .page { padding: 32px 18px 64px; }
+    .title { font-size: 26px; }
+    .month {
+      grid-template-columns: 1fr;
+      gap: 8px;
+    }
+    .month-label::after { display: none; }
+    .month-items {
+      border-left: none;
+      padding-left: 0;
+    }
+    .report {
+      grid-template-columns: 48px 1fr;
+      gap: 12px;
+    }
+    .thumb { width: 48px; height: 48px; }
+    .report-date {
+      grid-column: 2;
+      padding-top: 0;
+      margin-top: 6px;
+    }
+  }
+</style>
+</head>
+<body>
+  <main class="page">
+    <header>
+      <h1 class="title">Agenda</h1>
+      <div class="subtitle">
+        <span>Reports &amp; studies</span>
+        <span class="dot">·</span>
+        <span class="count" id="count">loading…</span>
+        <button class="refresh" id="refreshBtn" title="Refresh from GitHub">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
+          refresh
+        </button>
+      </div>
+    </header>
+
+    <div class="banner" id="setupBanner">
+      <strong>Setup needed:</strong> open <code>index.html</code> and set
+      <code>GITHUB.user</code> and <code>GITHUB.repo</code> at the top of the
+      &lt;script&gt; block. Until then, this page can't list your reports automatically.
+    </div>
+
+    <div class="banner" id="errorBanner"></div>
+
+    <div class="search" id="search">
+      <svg class="icon" width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input type="text" id="searchInput" placeholder="Search reports…" autocomplete="off" />
+      <button class="clear" id="clearBtn" aria-label="Clear search">
+        <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M2 2l8 8M10 2l-8 8"/></svg>
+      </button>
+    </div>
+
+    <div class="state" id="loadingState">Loading reports from GitHub…</div>
+    <div class="state" id="emptyState">No reports yet. Drop an HTML file in <code>reports/</code> and refresh.</div>
+    <div class="state" id="noMatchState">No reports match that search.</div>
+
+    <div class="timeline" id="timeline"></div>
+
+    <footer>
+      <div>maids.cc · business analysis</div>
+      <div class="mono" id="lastUpdated"></div>
+    </footer>
+  </main>
+
+  <!-- ─────────────────────────────────────────────────────────
+       HOW THIS WORKS
+       ────────────────
+       1. Set GITHUB.user / GITHUB.repo below.
+       2. Drop an HTML file in the reports/ folder of your repo.
+       3. Add these <meta> tags inside the report's <head>:
+
+            <meta name="report-title"   content="Agent Utilization · Q1 2026">
+            <meta name="report-date"    content="2026-05-18">
+            <meta name="report-summary" content="Hour-level analysis…">
+            <meta name="report-tags"    content="Ops, staffing">
+            <meta name="report-thumb"   content="thumb.png">   (optional)
+
+       4. Push to GitHub. Refresh this page. The report appears,
+          sorted by date, grouped by month.
+
+       Files without a report-title meta are ignored — useful for
+       drafts or shared utilities.
+       ───────────────────────────────────────────────────── -->
+  <script>
+    const GITHUB = {
+      user:   "",         // ← your GitHub username, e.g. "maidscc-analyst"
+      repo:   "",         // ← your repo name,       e.g. "agenda"
+      branch: "main",     // branch to read from (usually "main")
+      folder: "reports",  // folder containing report HTML files
+    };
+
+    // Cache responses in localStorage for this many minutes to be
+    // kind to GitHub's rate limit (60 requests/hour unauthenticated).
+    const CACHE_MINUTES = 5;
+
+    // ─── DOM refs ──────────────────────────────────────────
+    const $count          = document.getElementById('count');
+    const $timeline       = document.getElementById('timeline');
+    const $setupBanner    = document.getElementById('setupBanner');
+    const $errorBanner    = document.getElementById('errorBanner');
+    const $loadingState   = document.getElementById('loadingState');
+    const $emptyState     = document.getElementById('emptyState');
+    const $noMatchState   = document.getElementById('noMatchState');
+    const $lastUpdated    = document.getElementById('lastUpdated');
+    const $refreshBtn     = document.getElementById('refreshBtn');
+    const $searchInput    = document.getElementById('searchInput');
+    const $search         = document.getElementById('search');
+    const $clearBtn       = document.getElementById('clearBtn');
+
+    // ─── state ─────────────────────────────────────────────
+    let REPORTS = [];
+    let LOADING = true;
+    let FILTER  = '';
+
+    // ─── helpers ───────────────────────────────────────────
+    const MONTHS_LONG  = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+    const MONTHS_SHORT = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+
+    function parseDate(s) {
+      const [y, m, d] = String(s).split('-').map(Number);
+      return new Date(y, (m || 1) - 1, d || 1);
+    }
+    function fmtMonthHeader(d) { return `${MONTHS_LONG[d.getMonth()]} ${d.getFullYear()}`; }
+    function fmtShortDate(d)   { return `${MONTHS_SHORT[d.getMonth()]} ${String(d.getDate()).padStart(2, '0')}`; }
+    function escapeHTML(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+    function setShow(el, on) { el.classList.toggle('show', !!on); }
+
+    // ─── cache layer ───────────────────────────────────────
+    const CACHE_KEY = 'agenda-cache-v1';
+    function loadCache() {
+      try {
+        const raw = localStorage.getItem(CACHE_KEY);
+        if (!raw) return null;
+        const obj = JSON.parse(raw);
+        if (!obj || !obj.ts || !obj.reports) return null;
+        const age = (Date.now() - obj.ts) / 60000;
+        if (age > CACHE_MINUTES) return null;
+        return obj.reports;
+      } catch (_) { return null; }
+    }
+    function saveCache(reports) {
+      try {
+        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), reports }));
+      } catch (_) {}
+    }
+    function clearCache() {
+      try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
+    }
+
+    // ─── GitHub fetching ───────────────────────────────────
+    async function listReportFiles() {
+      const url = `https://api.github.com/repos/${GITHUB.user}/${GITHUB.repo}/contents/${GITHUB.folder}?ref=${encodeURIComponent(GITHUB.branch)}`;
+      const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
+      if (res.status === 404) {
+        throw new Error(`Folder "${GITHUB.folder}" not found in ${GITHUB.user}/${GITHUB.repo}@${GITHUB.branch}. Create the folder and add a report, then refresh.`);
+      }
+      if (res.status === 403) {
+        throw new Error(`GitHub rate limit reached (60 requests/hour per IP). Try again in a few minutes — your cached view will keep working.`);
+      }
+      if (!res.ok) {
+        throw new Error(`GitHub API returned ${res.status}. Double-check GITHUB.user / GITHUB.repo / GITHUB.branch in index.html.`);
+      }
+      const data = await res.json();
+      if (!Array.isArray(data)) throw new Error('Unexpected API response — is the folder a directory?');
+      return data
+        .filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.html') && item.name.toLowerCase() !== 'index.html')
+        .map(item => ({ name: item.name, downloadUrl: item.download_url }));
+    }
+
+    async function fetchReportMeta(file) {
+      try {
+        const res = await fetch(file.downloadUrl, { cache: 'no-cache' });
+        if (!res.ok) return null;
+        const html = await res.text();
+        const doc = new DOMParser().parseFromString(html, 'text/html');
+        const m = name => {
+          const tag = doc.querySelector(`meta[name="report-${name}"]`);
+          return tag ? tag.getAttribute('content') : null;
+        };
+        const title = m('title');
+        const date  = m('date');
+        if (!title || !date) return null;  // skip files without required metadata
+
+        const tagsRaw = m('tags');
+        const tags = tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const thumb = m('thumb');
+        return {
+          title,
+          date,
+          summary: m('summary') || '',
+          tags,
+          thumb: thumb ? `${GITHUB.folder}/${thumb}` : null,
+          href:  `${GITHUB.folder}/${file.name}`,
+        };
+      } catch (_) {
+        return null;
+      }
+    }
+
+    async function loadReportsFromGitHub() {
+      const files = await listReportFiles();
+      const metas = await Promise.all(files.map(fetchReportMeta));
+      return metas.filter(Boolean);
+    }
+
+    // ─── rendering ─────────────────────────────────────────
+    function groupByMonth(reports) {
+      const groups = new Map();
+      for (const r of reports) {
+        const d = parseDate(r.date);
+        const key = `${d.getFullYear()}-${String(d.getMonth()).padStart(2, '0')}`;
+        if (!groups.has(key)) groups.set(key, { label: fmtMonthHeader(d), items: [], sortKey: d.getTime() });
+        groups.get(key).items.push({ ...r, _date: d });
+      }
+      const arr = [...groups.values()].sort((a, b) => b.sortKey - a.sortKey);
+      arr.forEach(g => g.items.sort((a, b) => b._date - a._date));
+      return arr;
+    }
+
+    function renderReport(r) {
+      const date = fmtShortDate(r._date);
+      const thumb = r.thumb
+        ? `<div class="thumb"><img src="${escapeHTML(r.thumb)}" alt="" onerror="this.parentElement.classList.add('placeholder');this.parentElement.dataset.letter='${escapeHTML((r.title.trim()[0]||'·'))}';this.remove();"></div>`
+        : `<div class="thumb placeholder" data-letter="${escapeHTML(r.title.trim()[0] || '·')}"></div>`;
+      const tags = (r.tags && r.tags.length)
+        ? `<div class="report-tags">${r.tags.map(t => `<span class="tag">${escapeHTML(t)}</span>`).join('')}</div>`
+        : '';
+      const summary = r.summary ? `<div class="report-summary">${escapeHTML(r.summary)}</div>` : '';
+      return `
+        <a class="report" href="${escapeHTML(r.href)}">
+          ${thumb}
+          <div class="report-body">
+            <div class="report-title">${escapeHTML(r.title)}</div>
+            ${summary}
+            ${tags}
+          </div>
+          <div class="report-date">${date}</div>
+        </a>
+      `;
+    }
+
+    function renderSkeleton() {
+      $timeline.classList.add('skeleton');
+      const fake = `
+        <section class="month">
+          <div class="month-label">&nbsp;</div>
+          <div class="month-items">
+            ${Array.from({length: 3}).map(() => `
+              <div class="report">
+                <div class="thumb placeholder"></div>
+                <div class="report-body">
+                  <div class="skel-line" style="height:14px;width:60%"></div>
+                  <div class="skel-line" style="height:11px;width:90%;margin-top:8px"></div>
+                  <div class="skel-line" style="height:11px;width:40%;margin-top:6px"></div>
+                </div>
+                <div class="skel-line" style="height:11px;width:38px"></div>
+              </div>
+            `).join('')}
+          </div>
+        </section>
+      `;
+      $timeline.innerHTML = fake + fake;
+    }
+
+    function render() {
+      // setup-needed banner
+      const configured = GITHUB.user && GITHUB.repo;
+      setShow($setupBanner, !configured);
+      if (!configured) {
+        $timeline.innerHTML = '';
+        $timeline.classList.remove('skeleton');
+        setShow($loadingState, false);
+        setShow($emptyState, false);
+        setShow($noMatchState, false);
+        $count.textContent = '—';
+        return;
+      }
+
+      // loading state
+      if (LOADING) {
+        setShow($loadingState, false);  // skeleton takes its place
+        setShow($emptyState, false);
+        setShow($noMatchState, false);
+        $count.textContent = 'loading…';
+        renderSkeleton();
+        return;
+      }
+
+      $timeline.classList.remove('skeleton');
+
+      // filter
+      const q = FILTER.trim().toLowerCase();
+      const filtered = !q ? REPORTS : REPORTS.filter(r => {
+        const hay = [r.title, r.summary || '', ...(r.tags || [])].join(' ').toLowerCase();
+        return hay.includes(q);
+      });
+
+      $count.textContent = `${filtered.length} report${filtered.length === 1 ? '' : 's'}`;
+
+      // empty / no-match
+      if (REPORTS.length === 0) {
+        setShow($emptyState, true);
+        setShow($noMatchState, false);
+        $timeline.innerHTML = '';
+      } else if (filtered.length === 0) {
+        setShow($emptyState, false);
+        setShow($noMatchState, true);
+        $timeline.innerHTML = '';
+      } else {
+        setShow($emptyState, false);
+        setShow($noMatchState, false);
+        const groups = groupByMonth(filtered);
+        $timeline.innerHTML = groups.map(g => `
+          <section class="month">
+            <div class="month-label">${escapeHTML(g.label)}</div>
+            <div class="month-items">
+              ${g.items.map(renderReport).join('')}
+            </div>
+          </section>
+        `).join('');
+      }
+
+      // last-updated
+      if (REPORTS.length) {
+        const latest = REPORTS.reduce((max, r) => {
+          const d = parseDate(r.date);
+          return !max || d > max ? d : max;
+        }, null);
+        if (latest) {
+          $lastUpdated.textContent =
+            `Last updated ${MONTHS_SHORT[latest.getMonth()]} ${String(latest.getDate()).padStart(2,'0')}, ${latest.getFullYear()}`;
+        }
+      } else {
+        $lastUpdated.textContent = '';
+      }
+    }
+
+    function showError(msg) {
+      $errorBanner.textContent = msg;
+      setShow($errorBanner, true);
+    }
+    function hideError() {
+      setShow($errorBanner, false);
+    }
+
+    // ─── load flow ─────────────────────────────────────────
+    async function load({ force } = { force: false }) {
+      hideError();
+      if (!GITHUB.user || !GITHUB.repo) {
+        LOADING = false;
+        render();
+        return;
+      }
+
+      // serve cache if fresh
+      const cached = !force && loadCache();
+      if (cached) {
+        REPORTS = cached;
+        LOADING = false;
+        render();
+        return;
+      }
+
+      LOADING = true;
+      render();
+
+      try {
+        REPORTS = await loadReportsFromGitHub();
+        saveCache(REPORTS);
+      } catch (err) {
+        // on failure, fall back to any cached data we have
+        const stale = (() => {
+          try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); }
+          catch (_) { return null; }
+        })();
+        if (stale && stale.reports) {
+          REPORTS = stale.reports;
+          showError(`${err.message} Showing cached results.`);
+        } else {
+          REPORTS = [];
+          showError(err.message);
+        }
+      }
+      LOADING = false;
+      render();
+    }
+
+    // ─── wiring ────────────────────────────────────────────
+    $searchInput.addEventListener('input', (e) => {
+      FILTER = e.target.value;
+      $search.classList.toggle('has-value', !!FILTER);
+      render();
+    });
+    $clearBtn.addEventListener('click', () => {
+      $searchInput.value = '';
+      FILTER = '';
+      $search.classList.remove('has-value');
+      $searchInput.focus();
+      render();
+    });
+    $refreshBtn.addEventListener('click', () => {
+      clearCache();
+      load({ force: true });
+    });
+
+    load();
+  </script>
+</body>
+</html>
