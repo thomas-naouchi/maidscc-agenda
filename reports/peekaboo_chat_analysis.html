@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Peekaboo WhatsApp Chat Analysis — maids.cc</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0f0f0f;
+    --surface: #1a1a1a;
+    --surface2: #222222;
+    --border: #2e2e2e;
+    --accent: #e8c97e;
+    --accent2: #c4a45d;
+    --red: #e05c5c;
+    --green: #5cb87a;
+    --blue: #5b9bd5;
+    --text: #f0ede8;
+    --muted: #888;
+    --serif: 'Playfair Display', Georgia, serif;
+    --sans: 'DM Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1c1507 60%, #0f0f0f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 56px 60px 44px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -60px; right: -60px;
+    width: 340px; height: 340px;
+    background: radial-gradient(circle, rgba(232,201,126,.12) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header .eyebrow {
+    font-family: var(--sans);
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .18em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 14px;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: clamp(28px, 4vw, 46px);
+    font-weight: 900;
+    line-height: 1.1;
+    color: var(--text);
+    margin-bottom: 10px;
+  }
+  header .sub {
+    color: var(--muted);
+    font-size: 13px;
+    font-weight: 300;
+  }
+
+  /* ── LAYOUT ── */
+  main {
+    max-width: 1160px;
+    margin: 0 auto;
+    padding: 48px 40px 80px;
+    display: flex;
+    flex-direction: column;
+    gap: 52px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--accent);
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 24px;
+    letter-spacing: .01em;
+  }
+
+  /* ── KPI STRIP ── */
+  .kpi-strip {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+    gap: 16px;
+  }
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 20px 22px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp .5s ease both;
+  }
+  .kpi::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    background: var(--accent);
+    border-radius: 0 0 10px 10px;
+    opacity: .5;
+  }
+  .kpi.red::after { background: var(--red); }
+  .kpi.green::after { background: var(--green); }
+  .kpi.blue::after { background: var(--blue); }
+  .kpi-val {
+    font-family: var(--serif);
+    font-size: 34px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 6px;
+  }
+  .kpi-label {
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── GRID 2-COL ── */
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+  .grid3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; }
+
+  /* ── CARD ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+  }
+  .card-title {
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 20px;
+  }
+
+  /* ── FUNNEL ── */
+  .funnel {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  .funnel-row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .funnel-label {
+    width: 170px;
+    font-size: 12.5px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+  .funnel-bar-wrap {
+    flex: 1;
+    background: var(--surface2);
+    border-radius: 4px;
+    height: 22px;
+    overflow: hidden;
+  }
+  .funnel-bar {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(.4,0,.2,1);
+    animation: growBar 1.2s cubic-bezier(.4,0,.2,1) both;
+  }
+  @keyframes growBar {
+    from { width: 0 !important; }
+  }
+  .funnel-count {
+    width: 46px;
+    text-align: right;
+    font-size: 12.5px;
+    font-weight: 600;
+    color: var(--text);
+    flex-shrink: 0;
+  }
+  .funnel-pct {
+    width: 40px;
+    text-align: right;
+    font-size: 11px;
+    color: var(--muted);
+    flex-shrink: 0;
+  }
+
+  /* ── TABLES ── */
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  th {
+    text-align: left;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 8px 10px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 9px 10px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    color: var(--text);
+    vertical-align: middle;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.025); }
+  .bar-cell { width: 100px; }
+  .mini-bar {
+    height: 6px;
+    background: var(--accent);
+    border-radius: 3px;
+    opacity: .75;
+  }
+  .pct-text { color: var(--muted); font-size: 11.5px; }
+  .badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 20px;
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+  }
+  .badge-high { background: rgba(224,92,92,.18); color: var(--red); }
+  .badge-medium { background: rgba(232,201,126,.14); color: var(--accent); }
+  .badge-low { background: rgba(91,155,213,.14); color: var(--blue); }
+
+  /* ── EXEC SUMMARY ── */
+  .exec-box {
+    background: linear-gradient(135deg, #1a1507 0%, #1a1a1a 100%);
+    border: 1px solid rgba(232,201,126,.25);
+    border-radius: 12px;
+    padding: 28px 32px;
+    font-size: 14.5px;
+    line-height: 1.75;
+    color: #ccc;
+  }
+  .exec-box strong { color: var(--text); }
+
+  /* ── PATTERNS ── */
+  .pattern-list { display: flex; flex-direction: column; gap: 12px; }
+  .pattern-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-left: 3px solid var(--accent);
+  }
+  .pattern-item.conf-low { border-left-color: var(--blue); }
+  .pattern-title {
+    font-weight: 600;
+    font-size: 13.5px;
+    margin-bottom: 5px;
+    color: var(--text);
+  }
+  .pattern-finding {
+    font-size: 12.5px;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .pattern-impl {
+    font-size: 12.5px;
+    color: #bbb;
+  }
+
+  /* ── WEAKNESS / REC ── */
+  .item-grid { display: flex; flex-direction: column; gap: 10px; }
+  .item-card {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 14px 18px;
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+    align-items: start;
+  }
+  .item-name { font-weight: 600; font-size: 13px; margin-bottom: 4px; }
+  .item-desc { font-size: 12px; color: var(--muted); }
+  .item-count {
+    font-family: var(--serif);
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--red);
+    text-align: right;
+    line-height: 1;
+  }
+  .item-count-label { font-size: 10px; color: var(--muted); text-align: right; }
+
+  /* ── EXPERIMENTS ── */
+  .exp-list { display: flex; flex-direction: column; gap: 14px; }
+  .exp-item {
+    background: var(--surface2);
+    border-radius: 10px;
+    padding: 16px 20px;
+    border-left: 3px solid var(--blue);
+  }
+  .exp-label {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--blue);
+    margin-bottom: 6px;
+  }
+  .exp-hyp { font-size: 13px; margin-bottom: 8px; color: var(--text); }
+  .exp-test { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+  .exp-metric { font-size: 11.5px; color: var(--accent2); }
+
+  /* ── CAVEATS ── */
+  .caveat-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+  .caveat-list li {
+    display: flex; gap: 10px; align-items: flex-start;
+    font-size: 12.5px; color: var(--muted);
+  }
+  .caveat-list li::before {
+    content: '△';
+    color: var(--accent);
+    font-size: 11px;
+    margin-top: 2px;
+    flex-shrink: 0;
+  }
+
+  /* ── ANIMATION ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .section-block { animation: fadeUp .5s ease both; }
+
+  /* ── CHART CANVAS ── */
+  canvas { display: block; max-height: 280px; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 700px) {
+    main { padding: 28px 18px 60px; }
+    header { padding: 36px 22px 28px; }
+    .grid2, .grid3 { grid-template-columns: 1fr; }
+    .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="eyebrow">Management Report — maids.cc Leadership</div>
+  <h1>Peekaboo WhatsApp<br>Chat Analysis</h1>
+  <div class="sub">646 conversations reviewed &nbsp;·&nbsp; 81 analyzed in depth &nbsp;·&nbsp; 10 conversions identified</div>
+</header>
+
+<main>
+
+  <!-- EXEC SUMMARY -->
+  <div class="section-block">
+    <div class="section-title">Executive Summary</div>
+    <div class="exec-box">
+      <strong>646 conversations</strong> were reviewed. <strong>517 (80%)</strong> never received a consumer reply after the Peekaboo greeting — the largest single loss point in the funnel. Among the <strong>81 relevant or mixed conversations</strong> analyzed in depth, <strong>10 showed a conversion signal</strong>, yielding a <strong>12.3% conversion rate</strong> on the engaged set. Conversion took an average of <strong>100.4 hours</strong> and roughly <strong>3 nudges</strong>. The clearest mid-funnel blockers were silence after initial interest (29 conversations), price sensitivity (24), and profile availability / fit issues (12 + 12). The biggest lever is improving <strong>first-message reply rates</strong>, followed by earlier qualification and clearer pricing communication.
+    </div>
+  </div>
+
+  <!-- KPI STRIP -->
+  <div class="section-block">
+    <div class="section-title">Key Metrics</div>
+    <div class="kpi-strip">
+      <div class="kpi red">
+        <div class="kpi-val">646</div>
+        <div class="kpi-label">Total Conversations</div>
+      </div>
+      <div class="kpi red">
+        <div class="kpi-val">80%</div>
+        <div class="kpi-label">Unanswered Rate</div>
+      </div>
+      <div class="kpi blue">
+        <div class="kpi-val">81</div>
+        <div class="kpi-label">Engaged (Relevant)</div>
+      </div>
+      <div class="kpi green">
+        <div class="kpi-val">12.3%</div>
+        <div class="kpi-label">Conversion (Engaged)</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">100h</div>
+        <div class="kpi-label">Avg. Time to Convert</div>
+      </div>
+      <div class="kpi">
+        <div class="kpi-val">3</div>
+        <div class="kpi-label">Avg. Nudges to Convert</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- FUNNEL -->
+  <div class="section-block">
+    <div class="section-title">Conversation Funnel</div>
+    <div class="card">
+      <div class="funnel">
+        <div class="funnel-row">
+          <div class="funnel-label">Total Analyzed</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;background:#444;"></div></div>
+          <div class="funnel-count">646</div>
+          <div class="funnel-pct">100%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Unanswered</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:80%;background:var(--red);opacity:.75;"></div></div>
+          <div class="funnel-count">517</div>
+          <div class="funnel-pct">80.0%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Unrelated</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.2%;background:#666;"></div></div>
+          <div class="funnel-count">8</div>
+          <div class="funnel-pct">1.2%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Insufficient Info</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.1%;background:#666;"></div></div>
+          <div class="funnel-count">7</div>
+          <div class="funnel-pct">1.1%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Needs Manual Review</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:5%;background:var(--accent);opacity:.6;"></div></div>
+          <div class="funnel-count">32</div>
+          <div class="funnel-pct">5.0%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Mixed / Relevant</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:12.5%;background:var(--blue);opacity:.75;"></div></div>
+          <div class="funnel-count">81</div>
+          <div class="funnel-pct">12.5%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Converted</div>
+          <div class="funnel-bar-wrap"><div class="funnel-bar" style="width:1.5%;background:var(--green);"></div></div>
+          <div class="funnel-count">10</div>
+          <div class="funnel-pct">1.5%</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHARTS ROW -->
+  <div class="section-block grid2">
+    <!-- Nationality chart -->
+    <div class="card">
+      <div class="card-title">Nationality Preferences (of 81 relevant)</div>
+      <canvas id="natChart"></canvas>
+    </div>
+    <!-- Live-in/out + language -->
+    <div class="card">
+      <div class="card-title">Work Arrangement Preferences</div>
+      <canvas id="liveChart"></canvas>
+    </div>
+  </div>
+
+  <!-- PREFERENCES TABLES -->
+  <div class="section-block grid2">
+    <!-- Nationality table -->
+    <div class="card">
+      <div class="card-title">Nationality Demand Breakdown</div>
+      <table>
+        <thead>
+          <tr><th>Nationality</th><th>Count</th><th>% of Relevant</th><th class="bar-cell"></th></tr>
+        </thead>
+        <tbody id="natTable"></tbody>
+      </table>
+    </div>
+    <!-- Age + Language -->
+    <div class="card">
+      <div class="card-title">Language Requested</div>
+      <table>
+        <thead>
+          <tr><th>Language</th><th>Count</th><th>% of Relevant</th><th class="bar-cell"></th></tr>
+        </thead>
+        <tbody>
+          <tr><td>English</td><td>9</td><td class="pct-text">11.1%</td><td><div class="mini-bar" style="width:100%"></div></td></tr>
+          <tr><td>Arabic</td><td>2</td><td class="pct-text">2.5%</td><td><div class="mini-bar" style="width:22%"></div></td></tr>
+          <tr><td>Hindi</td><td>1</td><td class="pct-text">1.2%</td><td><div class="mini-bar" style="width:11%"></div></td></tr>
+          <tr><td>Urdu</td><td>1</td><td class="pct-text">1.2%</td><td><div class="mini-bar" style="width:11%"></div></td></tr>
+          <tr><td>Sinhala</td><td>1</td><td class="pct-text">1.2%</td><td><div class="mini-bar" style="width:11%"></div></td></tr>
+        </tbody>
+      </table>
+      <br>
+      <div class="card-title" style="margin-top:8px">Age Preferences</div>
+      <table>
+        <thead>
+          <tr><th>Age Range</th><th>Count</th><th>% of Relevant</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>Under 40</td><td>5</td><td class="pct-text">6.2%</td></tr>
+          <tr><td>Young / Active</td><td>4</td><td class="pct-text">4.9%</td></tr>
+          <tr><td>Under 35</td><td>3</td><td class="pct-text">3.7%</td></tr>
+          <tr><td>30–45</td><td>2</td><td class="pct-text">2.5%</td></tr>
+          <tr><td>Under 50</td><td>2</td><td class="pct-text">2.5%</td></tr>
+          <tr><td>26–45</td><td>1</td><td class="pct-text">1.2%</td></tr>
+          <tr><td>35–40</td><td>1</td><td class="pct-text">1.2%</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- KEY PATTERNS -->
+  <div class="section-block">
+    <div class="section-title">Key Patterns</div>
+    <div class="pattern-list">
+      <div class="pattern-item">
+        <div class="pattern-title">80.0% drop before any customer reply</div>
+        <div class="pattern-finding">517 of 646 conversations unanswered after the Peekaboo greeting — only 20% moved to two-way conversation.</div>
+        <div class="pattern-impl">→ Largest funnel leak; downstream improvements have limited impact until this is addressed.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">12.3% conversion rate in engaged relevant chats</div>
+        <div class="pattern-finding">10 of 81 relevant/mixed conversations converted: 4 confirmed paid, 6 application-started.</div>
+        <div class="pattern-impl">→ The sales flow can convert when prospects engage; too few engaged chats reach a committed next step.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">45.7% asked for Filipino / Filipina maids</div>
+        <div class="pattern-finding">37 of 81 conversations specified Filipino/Filipina, far ahead of African (11) and Indian (7).</div>
+        <div class="pattern-impl">→ Shortages in Filipina profiles likely hurt conversions more than any other single supply gap.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">35.8% of non-conversions ended in silence</div>
+        <div class="pattern-finding">29 conversations were coded as went_silent — the largest named drop-off reason among non-converted chats.</div>
+        <div class="pattern-impl">→ Deals aren't being lost through explicit rejection; follow-up quality is the main lever.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">29.6% showed price sensitivity</div>
+        <div class="pattern-finding">24 of 81 conversations marked price-sensitive; 8 explicitly asked for discounts.</div>
+        <div class="pattern-impl">→ Price framing and value explanation need to happen early before prospects hesitate.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">4.2-day average conversion window</div>
+        <div class="pattern-finding">Average time from Peekaboo outreach to conversion was 100.4 hours with 3 nudges.</div>
+        <div class="pattern-impl">→ A planned multi-day follow-up flow is necessary; conversions rarely happen on first contact.</div>
+      </div>
+      <div class="pattern-item conf-low">
+        <div class="pattern-title" style="color:var(--blue)">4.9% showed direct skepticism about maids.cc <span style="font-size:10px;font-weight:400;color:var(--muted)">(low confidence)</span></div>
+        <div class="pattern-finding">4 of 81 conversations showed explicit skepticism about maids.cc; none about Peekaboo itself.</div>
+        <div class="pattern-impl">→ Trust concerns attach to service handling, contracts, or payments — sample is small.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- WORKFLOW WEAKNESSES -->
+  <div class="section-block">
+    <div class="section-title">Workflow Weaknesses</div>
+    <div class="item-grid">
+      <div class="item-card">
+        <div>
+          <div class="item-name">Weak first-message engagement</div>
+          <div class="item-desc">The opening outreach failed to start a conversation in 80% of cases. Most potential demand is lost before qualification, profile sharing, or pricing begins.</div>
+        </div>
+        <div>
+          <div class="item-count">517</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+      <div class="item-card">
+        <div>
+          <div class="item-name">Prospects go silent after initial interest</div>
+          <div class="item-desc">29 conversations ended with the prospect going silent, often after seeing profiles or discussing pricing. Active leads aren't converting to a concrete next step.</div>
+        </div>
+        <div>
+          <div class="item-count">29</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+      <div class="item-card">
+        <div>
+          <div class="item-name">Pricing creates hesitation</div>
+          <div class="item-desc">24 conversations showed price sensitivity, 8 asked for discounts, and 6 cited price as the drop-off reason. Confusing value framing is pushing prospects to pause or reject.</div>
+        </div>
+        <div>
+          <div class="item-count">24</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+      <div class="item-card">
+        <div>
+          <div class="item-name">Profile availability & fit mismatch</div>
+          <div class="item-desc">12 conversations complained about limited profiles; 12 requested profiles or types not available. When prospects can't see suitable options, trust drops and browsing stalls.</div>
+        </div>
+        <div>
+          <div class="item-count">24</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+      <div class="item-card">
+        <div>
+          <div class="item-name">Slow or inconsistent handling</div>
+          <div class="item-desc">6 conversations showed slow response; 6 had incorrect information given (availability, contract, payment). Inconsistency adds friction when prospects need certainty to proceed.</div>
+        </div>
+        <div>
+          <div class="item-count">12</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+      <div class="item-card">
+        <div>
+          <div class="item-name">Post-payment & paperwork confusion</div>
+          <div class="item-desc">Confirmed-paid cases experienced repeated pending-document messages and rejection loops, causing visible frustration. Increases support load and raises refund risk.</div>
+        </div>
+        <div>
+          <div class="item-count">6</div>
+          <div class="item-count-label">conversations</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- RECOMMENDATIONS TABLE -->
+  <div class="section-block">
+    <div class="section-title">Recommendations</div>
+    <div class="card">
+      <table>
+        <thead>
+          <tr><th>#</th><th>Recommendation</th><th>Addresses</th><th>Expected Impact</th><th>Effort</th><th>Priority</th></tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>1</td>
+            <td>Rewrite first WhatsApp message as a short reply trigger with one qualifying question (live-in vs live-out)</td>
+            <td>Weak first-message engagement</td>
+            <td>Reply rate: ~20% → 25–30%</td>
+            <td>Low</td>
+            <td><span class="badge badge-high">High</span></td>
+          </tr>
+          <tr>
+            <td>2</td>
+            <td>Qualify every engaged lead on 4 filters before sharing profiles: nationality, live-in/out, emirate, childcare</td>
+            <td>Profile fit mismatch</td>
+            <td>Reduces mismatch friction meaningfully</td>
+            <td>Low</td>
+            <td><span class="badge badge-high">High</span></td>
+          </tr>
+          <tr>
+            <td>3</td>
+            <td>Only show profiles currently available, clearly tagged for top demand filters (Filipina, childcare, live-in/out)</td>
+            <td>Profile availability</td>
+            <td>Reduce profile complaints by 20–30%</td>
+            <td>Medium</td>
+            <td><span class="badge badge-high">High</span></td>
+          </tr>
+          <tr>
+            <td>4</td>
+            <td>Send plain-language pricing explainer early (salary, visa, fees, VAT, recurring) before deep discussion</td>
+            <td>Pricing hesitation</td>
+            <td>+2–5 pp conversion among price-sensitive leads</td>
+            <td>Medium</td>
+            <td><span class="badge badge-high">High</span></td>
+          </tr>
+          <tr>
+            <td>5</td>
+            <td>Audit & standardize all agent/bot templates for pricing, availability, contract terms, and document status</td>
+            <td>Inconsistent handling</td>
+            <td>Reduces trust-damaging loops in 12 flagged chats</td>
+            <td>Medium</td>
+            <td><span class="badge badge-high">High</span></td>
+          </tr>
+          <tr>
+            <td>6</td>
+            <td>24-hour recovery sequence for silent prospects referencing their last stated preference and offering one new match</td>
+            <td>Silence drop-off</td>
+            <td>Recovers part of 29 silent leads</td>
+            <td>Low</td>
+            <td><span class="badge badge-medium">Medium</span></td>
+          </tr>
+          <tr>
+            <td>7</td>
+            <td>Post-payment workflow: stop auto reminders once docs received; route exceptions to a named human owner</td>
+            <td>Post-payment confusion</td>
+            <td>Lowers complaint & refund risk</td>
+            <td>Medium</td>
+            <td><span class="badge badge-medium">Medium</span></td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- EXPERIMENTS -->
+  <div class="section-block">
+    <div class="section-title">Proposed Experiments</div>
+    <div class="exp-list">
+      <div class="exp-item">
+        <div class="exp-label">Experiment 1 — First Message</div>
+        <div class="exp-hyp">If maids.cc replaces the current first outreach with a one-question quick-reply opener, more Peekaboo leads will reply.</div>
+        <div class="exp-test">A/B test current greeting vs. shorter version asking "Are you looking for live-in or live-out?" — delay pricing until after the first reply.</div>
+        <div class="exp-metric">✦ Metric: Reply rate within 24 hours &amp; qualified-conversation rate</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">Experiment 2 — Profile Fit Check</div>
+        <div class="exp-hyp">If profiles are shown only after a structured fit check (nationality, living arrangement, emirate, childcare), fewer prospects will drop due to mismatch.</div>
+        <div class="exp-test">Pilot structured intake for half of new engaged leads before any profile sharing; compare mismatch complaints with current flow.</div>
+        <div class="exp-metric">✦ Metric: Unavailable-profile complaints &amp; profile-to-application rate</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">Experiment 3 — Pricing Explainer</div>
+        <div class="exp-hyp">If agents send a one-screen pricing breakdown before deeper price discussion, fewer prospects will object on cost.</div>
+        <div class="exp-test">For half of chats that ask about cost, send explainer immediately after qualification; compare outcomes against normal handling.</div>
+        <div class="exp-metric">✦ Metric: Price-sensitive chats that continue after pricing &amp; application-start rate</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">Experiment 4 — Silent Lead Recovery</div>
+        <div class="exp-hyp">If silent prospects receive a personalized recovery message tied to their last stated preference, some stalled leads will re-engage.</div>
+        <div class="exp-test">For two weeks, send personalized 24-hour follow-ups to all newly silent leads; compare reactivation against a control using the standard reminder.</div>
+        <div class="exp-metric">✦ Metric: Reactivation rate &amp; conversion rate among previously silent prospects</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">Experiment 5 — Post-Payment Workflow</div>
+        <div class="exp-hyp">If automated document reminders stop once documents are received and exceptions get a human owner, paid-customer frustration will decline.</div>
+        <div class="exp-test">Pilot on all paid/application-started cases for two weeks; track duplicate reminder complaints vs. current process.</div>
+        <div class="exp-metric">✦ Metric: Repeated document-request complaints, support touches per paid case, refund-risk complaints</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- HIGH CONFIDENCE FINDINGS -->
+  <div class="section-block grid2">
+    <div>
+      <div class="section-title">High-Confidence Findings</div>
+      <ul style="list-style:none;display:flex;flex-direction:column;gap:9px;">
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>517 of 646 conversations (80%) unanswered — first-message engagement is the biggest funnel loss.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>10 of 81 relevant conversations converted — 12.3% conversion rate in engaged set.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>37 of 81 (45.7%) asked for Filipino/Filipina maids — dominant nationality preference.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>29 conversations went silent — largest named drop-off reason among non-converted chats.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>24 of 81 (29.6%) were price-sensitive; 8 asked explicitly for discounts.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>42 of 81 conversations stated live-in or live-out preferences — core qualification variable.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>37 of 81 explicitly mentioned childcare needs — demand is childcare-led, not generic housekeeping.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>12 + 12 conversations hit profile shortage or unavailability — repeated supply-fit friction.</li>
+        <li style="display:flex;gap:10px;font-size:12.5px;color:#ccc;align-items:flex-start;"><span style="color:var(--green);margin-top:2px">●</span>Converted chats averaged 100.4 hours and 3 nudges — multi-day follow-up is usually required.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="section-title">Low-Confidence Signals & Caveats</div>
+      <ul class="caveat-list" style="margin-bottom:20px">
+        <li>Trust issues appear aimed more at maids.cc handling than at Peekaboo, but based on only 4 conversations.</li>
+        <li>Muslim religion preference appeared in only 2 conversations — too small to drive workflow changes.</li>
+        <li>Arabic-language support may help but only 2 conversations explicitly requested it.</li>
+        <li>Marital-status preference appeared only 3 times explicitly — should not shape standard messaging yet.</li>
+      </ul>
+      <div class="section-title">Data Caveats</div>
+      <ul class="caveat-list">
+        <li>Conversion is inferred from chat text only — payment may not have been fully verified.</li>
+        <li>Preference data reflects only prospects who explicitly stated preferences — silent prospects are not counted.</li>
+      </ul>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ── Nationality data ──
+const natData = [
+  { value: "Filipino/Filipina", count: 37, pct: 45.7 },
+  { value: "African",           count: 11, pct: 13.6 },
+  { value: "Indian",            count: 7,  pct: 8.6  },
+  { value: "Ethiopian",         count: 5,  pct: 6.2  },
+  { value: "GCC national",      count: 3,  pct: 3.7  },
+  { value: "Sri Lankan",        count: 3,  pct: 3.7  },
+  { value: "Indonesian",        count: 2,  pct: 2.5  },
+  { value: "Nepali/Nepal",      count: 2,  pct: 2.5  },
+  { value: "UAE national",      count: 2,  pct: 2.5  },
+  { value: "Kenyan",            count: 1,  pct: 1.2  },
+  { value: "Myanmar",           count: 1,  pct: 1.2  },
+  { value: "Pakistani",         count: 1,  pct: 1.2  },
+  { value: "Expat",             count: 1,  pct: 1.2  },
+];
+
+// Populate nationality table
+const tbody = document.getElementById('natTable');
+const maxCount = natData[0].count;
+natData.forEach(r => {
+  tbody.innerHTML += `<tr>
+    <td>${r.value}</td>
+    <td>${r.count}</td>
+    <td class="pct-text">${r.pct}%</td>
+    <td><div class="mini-bar" style="width:${Math.round(r.count/maxCount*100)}%"></div></td>
+  </tr>`;
+});
+
+// ── Chart colors ──
+const chartDefaults = {
+  plugins: { legend: { labels: { color: '#aaa', font: { family: "'DM Sans', sans-serif", size: 12 } } } },
+  scales: {
+    x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+    y: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+  }
+};
+
+// ── Nationality bar chart ──
+new Chart(document.getElementById('natChart'), {
+  type: 'bar',
+  data: {
+    labels: natData.map(d => d.value),
+    datasets: [{
+      label: 'Conversations',
+      data: natData.map(d => d.count),
+      backgroundColor: natData.map((_, i) => i === 0 ? '#e8c97e' : 'rgba(232,201,126,.35)'),
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    indexAxis: 'y',
+    responsive: true,
+    plugins: { legend: { display: false } },
+    scales: {
+      x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+      y: { ticks: { color: '#ccc', font: { size: 11 } }, grid: { display: false } }
+    }
+  }
+});
+
+// ── Live-in / Live-out doughnut ──
+new Chart(document.getElementById('liveChart'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Live-in (30.9%)', 'Live-out (19.8%)', 'Open/Mixed (2.5%)', 'Not stated (46.8%)'],
+    datasets: [{
+      data: [25, 16, 2, 38],
+      backgroundColor: ['#e8c97e', '#5b9bd5', '#5cb87a', '#333'],
+      borderColor: '#1a1a1a',
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '62%',
+    plugins: {
+      legend: { position: 'bottom', labels: { color: '#aaa', font: { size: 11 }, padding: 14, boxWidth: 12 } }
+    }
+  }
+});
+</script>
+</body>
+</html>

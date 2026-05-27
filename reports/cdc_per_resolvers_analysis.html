@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CDC as per Resolvers — MV Visits Analysis · maids.cc</title>
+<link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;0,900;1,400&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg:        #0f0f0f;
+    --surface:   #1a1a1a;
+    --surface2:  #222222;
+    --border:    #2e2e2e;
+    --accent:    #e8c97e;
+    --accent2:   #c4a45d;
+    --red:       #e05c5c;
+    --red-dim:   rgba(224,92,92,.13);
+    --green:     #5cb87a;
+    --green-dim: rgba(92,184,122,.13);
+    --blue:      #5b9bd5;
+    --blue-dim:  rgba(91,155,213,.13);
+    --amber:     #e8a05c;
+    --amber-dim: rgba(232,160,92,.13);
+    --text:      #f0ede8;
+    --muted:     #888;
+    --muted2:    #444;
+    --serif:     'Playfair Display', Georgia, serif;
+    --sans:      'DM Sans', system-ui, sans-serif;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 14px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: linear-gradient(135deg, #0f0f0f 0%, #1c1507 55%, #0f0f0f 100%);
+    border-bottom: 1px solid var(--border);
+    padding: 60px 64px 48px;
+    position: relative;
+    overflow: hidden;
+  }
+  header::before {
+    content: '';
+    position: absolute;
+    top: -80px; right: -80px;
+    width: 400px; height: 400px;
+    background: radial-gradient(circle, rgba(232,201,126,.10) 0%, transparent 70%);
+    pointer-events: none;
+  }
+  header::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, var(--accent2), transparent);
+    opacity: .4;
+  }
+  .header-eyebrow {
+    font-size: 10.5px;
+    font-weight: 600;
+    letter-spacing: .22em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 18px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  .header-eyebrow::before {
+    content: '';
+    display: block;
+    width: 28px; height: 1px;
+    background: var(--accent);
+    opacity: .6;
+  }
+  header h1 {
+    font-family: var(--serif);
+    font-size: clamp(30px, 4.5vw, 52px);
+    font-weight: 900;
+    line-height: 1.08;
+    color: var(--text);
+  }
+  header h1 em { font-style: italic; color: var(--accent); }
+
+  /* ── MAIN ── */
+  main {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 56px 48px 100px;
+    display: flex;
+    flex-direction: column;
+    gap: 72px;
+  }
+
+  /* ── SECTION TITLE ── */
+  .section-title {
+    font-family: var(--serif);
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--accent);
+    padding-bottom: 14px;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 28px;
+    display: flex;
+    align-items: baseline;
+    gap: 16px;
+  }
+  .section-title .note {
+    font-family: var(--sans);
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .08em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  /* ── KPI CARD — base ── */
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 26px 28px;
+    position: relative;
+    overflow: hidden;
+    animation: fadeUp .45s ease both;
+  }
+  .kpi::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 10px 10px;
+    background: var(--accent);
+    opacity: .4;
+  }
+  .kpi.blue::after   { background: var(--blue); }
+  .kpi.green::after  { background: var(--green); }
+  .kpi.red::after    { background: var(--red); }
+  .kpi.amber::after  { background: var(--amber); }
+
+  /* label comes first, bold */
+  .kpi-label {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .kpi-val {
+    font-family: var(--serif);
+    font-size: 48px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 4px;
+  }
+  .kpi-ratio {
+    font-size: 22px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 14px;
+  }
+  .kpi-formula {
+    font-size: 12px;
+    color: var(--muted2);
+    font-style: italic;
+    line-height: 1.55;
+    border-top: 1px solid var(--border);
+    padding-top: 10px;
+  }
+
+  /* ── STRIPS ── */
+  .kpi-strip      { display: grid; gap: 18px; }
+  .kpi-strip.col3 { grid-template-columns: repeat(3,1fr); }
+  .kpi-strip.col2 { grid-template-columns: repeat(2,1fr); }
+
+  /* ── SPLIT KPI CARD (actual | hypo) ── */
+  .split-kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    overflow: hidden;
+    animation: fadeUp .45s ease both;
+    position: relative;
+  }
+  .split-kpi::after {
+    content: '';
+    position: absolute;
+    bottom: 0; left: 0; right: 0;
+    height: 3px;
+    border-radius: 0 0 10px 10px;
+    opacity: .4;
+  }
+  .split-kpi.blue::after   { background: var(--blue); }
+  .split-kpi.green::after  { background: var(--green); }
+  .split-kpi.red::after    { background: var(--red); }
+  .split-kpi.amber::after  { background: var(--amber); }
+
+  .split-kpi-header {
+    padding: 16px 26px 13px;
+    border-bottom: 1px solid var(--border);
+    font-size: 14px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .split-kpi-body {
+    display: grid;
+    grid-template-columns: 1fr 1px 1fr;
+  }
+  .split-kpi-col {
+    padding: 22px 26px 24px;
+  }
+  .split-kpi-divider {
+    background: var(--border);
+    align-self: stretch;
+  }
+  .split-kpi-col-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted2);
+    margin-bottom: 10px;
+  }
+  .split-kpi-val {
+    font-family: var(--serif);
+    font-size: 40px;
+    font-weight: 900;
+    line-height: 1;
+    color: var(--text);
+    margin-bottom: 3px;
+  }
+  .split-kpi-ratio {
+    font-size: 19px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 10px;
+  }
+  .split-kpi-formula {
+    font-size: 12px;
+    color: var(--muted2);
+    font-style: italic;
+    line-height: 1.55;
+  }
+  .split-kpi-delta {
+    display: inline-flex;
+    align-items: center;
+    font-size: 13px;
+    font-weight: 700;
+    padding: 3px 10px;
+    border-radius: 20px;
+    margin-top: 6px;
+  }
+  .delta-up   { background: var(--green-dim); color: var(--green); }
+  .delta-down { background: var(--red-dim);   color: var(--red); }
+  .delta-neu  { background: rgba(255,255,255,.06); color: var(--muted); }
+
+  /* ── HYPO SECTION ── */
+  .hypo-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 18px;
+  }
+  .hypo-group-divider {
+    grid-column: 1 / -1;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    color: var(--muted);
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+  }
+  .hypo-group-divider::before,
+  .hypo-group-divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+
+  /* ── HYPO NOTE ── */
+  .hypo-note {
+    background: linear-gradient(135deg, #1a1507 0%, #1a1a1a 100%);
+    border: 1px solid rgba(232,201,126,.22);
+    border-radius: 10px;
+    padding: 22px 28px;
+    font-size: 14.5px;
+    color: #ccc;
+    line-height: 1.75;
+    margin-bottom: 26px;
+  }
+  .hypo-note strong { color: var(--text); }
+  .hypo-note-label {
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .16em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 10px;
+  }
+
+  /* ── MONTHLY TABLE CARD ── */
+  .month-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    animation: fadeUp .45s ease both;
+  }
+  .month-header {
+    display: grid;
+    grid-template-columns: 188px 1fr 1px 1fr;
+    background: var(--surface2);
+    border-bottom: 1px solid var(--border);
+  }
+  .month-header-name {
+    padding: 14px 20px;
+    border-right: 1px solid var(--border);
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--accent);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .month-header-name::before {
+    content: '';
+    display: block;
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+  .month-card.mar .month-header-name::before { background: var(--blue); }
+  .month-card.apr .month-header-name::before { background: var(--accent); }
+  .month-card.may .month-header-name::before { background: var(--amber); }
+
+  .month-col-header {
+    padding: 14px 20px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    display: flex;
+    align-items: center;
+  }
+  .month-col-divider { background: var(--border); }
+  .month-body {
+    display: grid;
+    grid-template-columns: 188px 1fr 1px 1fr;
+  }
+  .month-row-label-col {
+    border-right: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+  }
+  .month-metric-label {
+    padding: 14px 20px;
+    font-size: 13px;
+    font-weight: 700;
+    color: var(--muted);
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    display: flex;
+    align-items: center;
+  }
+  .month-metric-label:last-child { border-bottom: none; }
+  .month-col-divider-body { background: var(--border); }
+  .month-data-col { display: flex; flex-direction: column; }
+  .month-cell {
+    padding: 14px 20px;
+    font-size: 15px;
+    font-weight: 600;
+    border-bottom: 1px solid rgba(255,255,255,.05);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .month-cell:last-child { border-bottom: none; }
+  .month-cell .val { color: var(--text); }
+  .month-cell .ratio { color: var(--muted); font-size: 13px; font-weight: 500; }
+  .month-cell.green .val  { color: var(--green); }
+  .month-cell.blue .val   { color: var(--blue); }
+  .month-cell.amber .val  { color: var(--amber); }
+  .month-cell.red .val    { color: var(--red); }
+
+  /* ── TABLE ── */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 30px;
+  }
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: .1em;
+    text-transform: uppercase;
+    color: var(--accent);
+    margin-bottom: 22px;
+  }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th {
+    text-align: left;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: .09em;
+    text-transform: uppercase;
+    color: var(--muted);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+  }
+  td {
+    padding: 12px 14px;
+    border-bottom: 1px solid rgba(255,255,255,.04);
+    color: var(--text);
+    vertical-align: top;
+  }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+
+  /* ── BADGE ── */
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    padding: 3px 11px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-weight: 600;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .badge-gold   { background: rgba(232,201,126,.15); color: var(--accent); }
+  .badge-red    { background: var(--red-dim);    color: var(--red); }
+  .badge-green  { background: var(--green-dim);  color: var(--green); }
+  .badge-blue   { background: var(--blue-dim);   color: var(--blue); }
+  .badge-amber  { background: var(--amber-dim);  color: var(--amber); }
+  .badge-muted  { background: rgba(255,255,255,.07); color: var(--muted); }
+  .badge-purple { background: rgba(155,139,213,.15); color: #9b8bd5; }
+
+  /* ── ANIMATION ── */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(10px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+  .section-block { animation: fadeUp .5s ease both; }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 860px) {
+    main { padding: 28px 18px 60px; }
+    header { padding: 40px 22px 32px; }
+    .kpi-strip.col3, .kpi-strip.col2, .hypo-grid { grid-template-columns: 1fr; }
+    .month-header, .month-body { grid-template-columns: 120px 1fr 1px 1fr; }
+  }
+  @media (max-width: 560px) {
+    .month-header, .month-body { grid-template-columns: 1fr; }
+    .month-col-divider, .month-col-divider-body { display: none; }
+    .split-kpi-body { grid-template-columns: 1fr; }
+    .split-kpi-divider { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-eyebrow">Retraction Analysis · MV Visits · Mar – May 2026</div>
+  <h1>CDC as per <em>Resolvers</em><br>Impact Report</h1>
+</header>
+
+<main>
+
+  <!-- ① KEY METRICS -->
+  <div class="section-block">
+    <div class="section-title">Key Metrics</div>
+    <div class="kpi-strip col3">
+
+      <div class="kpi">
+        <div class="kpi-label">Total MV Visits</div>
+        <div class="kpi-val">1,136</div>
+        <div class="kpi-formula">Mar (403) · Apr (398) · May (335)</div>
+      </div>
+
+      <div class="kpi blue">
+        <div class="kpi-label">Eligible Visits</div>
+        <div class="kpi-val">800</div>
+        <div class="kpi-ratio">70.4%</div>
+        <div class="kpi-formula">Successful + Rejected = 371 + 429<br>Eligible / Total = 800 / 1,136</div>
+      </div>
+
+      <div class="kpi red">
+        <div class="kpi-label">Ineligible Visits</div>
+        <div class="kpi-val">336</div>
+        <div class="kpi-ratio">29.6%</div>
+        <div class="kpi-formula">Ineligible / Total = 336 / 1,136</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ② ELIGIBLE BREAKDOWN -->
+  <div class="section-block">
+    <div class="section-title">Eligible Breakdown</div>
+    <div class="kpi-strip col2">
+
+      <div class="kpi green">
+        <div class="kpi-label">Successful</div>
+        <div class="kpi-val">371</div>
+        <div class="kpi-ratio">46.4%</div>
+        <div class="kpi-formula">Successful / Eligible = 371 / 800</div>
+      </div>
+
+      <div class="kpi red">
+        <div class="kpi-label">Rejected</div>
+        <div class="kpi-val">429</div>
+        <div class="kpi-ratio">53.6%</div>
+        <div class="kpi-formula">Rejected / Eligible = 429 / 800</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ③ INELIGIBLE BREAKDOWN -->
+  <div class="section-block">
+    <div class="section-title">Ineligible Breakdown</div>
+    <div class="kpi-strip col2" style="max-width:520px">
+
+      <div class="kpi amber">
+        <div class="kpi-label">CDC as per Resolvers</div>
+        <div class="kpi-val">26</div>
+        <div class="kpi-ratio">7.7% of all ineligible cases</div>
+        <div class="kpi-formula">2.3% of all visits &nbsp;·&nbsp; 26 / 1,136</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ④ HYPOTHETICAL ANALYSIS -->
+  <div class="section-block">
+    <div class="section-title">Hypothetical Analysis <span class="note">If CDC resolver cases were successful</span></div>
+
+    <div class="hypo-note">
+      <div class="hypo-note-label">Scenario note</div>
+      The following ratios show what the metrics would look like if all <strong>26 CDC as per resolvers</strong> cases had instead been retained as successful retractions. These cases move from <strong>Ineligible → Eligible</strong>, into the <strong>Successful</strong> count.
+    </div>
+
+    <div class="hypo-grid">
+
+      <!-- DIVIDER: Eligible / Ineligible -->
+      <div class="hypo-group-divider">Eligible &amp; Ineligible</div>
+
+      <!-- Eligible split card -->
+      <div class="split-kpi blue">
+        <div class="split-kpi-header">Eligible Visits</div>
+        <div class="split-kpi-body">
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Actual</div>
+            <div class="split-kpi-val">800</div>
+            <div class="split-kpi-ratio">70.4%</div>
+            <div class="split-kpi-formula">(S + R) / Total<br>= 800 / 1,136</div>
+          </div>
+          <div class="split-kpi-divider"></div>
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Hypothetical</div>
+            <div class="split-kpi-val">826</div>
+            <div class="split-kpi-ratio">72.7%</div>
+            <div class="split-kpi-formula">(S + R + CDC) / Total<br>= 826 / 1,136</div>
+            <div class="split-kpi-delta delta-up">▲ +2.3pp</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Ineligible split card -->
+      <div class="split-kpi red">
+        <div class="split-kpi-header">Ineligible Visits</div>
+        <div class="split-kpi-body">
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Actual</div>
+            <div class="split-kpi-val">336</div>
+            <div class="split-kpi-ratio">29.6%</div>
+            <div class="split-kpi-formula">Ineligible / Total<br>= 336 / 1,136</div>
+          </div>
+          <div class="split-kpi-divider"></div>
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Hypothetical</div>
+            <div class="split-kpi-val">310</div>
+            <div class="split-kpi-ratio">27.3%</div>
+            <div class="split-kpi-formula">(Ineligible − CDC) / Total<br>= 310 / 1,136</div>
+            <div class="split-kpi-delta delta-down">▼ −2.3pp</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- DIVIDER: Eligible breakdown -->
+      <div class="hypo-group-divider">Eligible breakdown</div>
+
+      <!-- Successful split card -->
+      <div class="split-kpi green">
+        <div class="split-kpi-header">Successful</div>
+        <div class="split-kpi-body">
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Actual</div>
+            <div class="split-kpi-val">371</div>
+            <div class="split-kpi-ratio">46.4%</div>
+            <div class="split-kpi-formula">Successful / Eligible<br>= 371 / 800</div>
+          </div>
+          <div class="split-kpi-divider"></div>
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Hypothetical</div>
+            <div class="split-kpi-val">397</div>
+            <div class="split-kpi-ratio">48.1%</div>
+            <div class="split-kpi-formula">(S + CDC) / (Eligible + CDC)<br>= 397 / 826</div>
+            <div class="split-kpi-delta delta-up">▲ +1.7pp</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Rejected split card -->
+      <div class="split-kpi">
+        <div class="split-kpi-header">Rejected</div>
+        <div class="split-kpi-body">
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Actual</div>
+            <div class="split-kpi-val">429</div>
+            <div class="split-kpi-ratio">53.6%</div>
+            <div class="split-kpi-formula">Rejected / Eligible<br>= 429 / 800</div>
+          </div>
+          <div class="split-kpi-divider"></div>
+          <div class="split-kpi-col">
+            <div class="split-kpi-col-label">Hypothetical</div>
+            <div class="split-kpi-val">429</div>
+            <div class="split-kpi-ratio">51.9%</div>
+            <div class="split-kpi-formula">Rejected / (Eligible + CDC)<br>= 429 / 826</div>
+            <div class="split-kpi-delta delta-down">▼ −1.7pp</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ⑤ MONTHLY BREAKDOWN -->
+  <div class="section-block">
+    <div class="section-title">Monthly Breakdown</div>
+    <div style="display:flex;flex-direction:column;gap:16px;">
+
+      <!-- MARCH -->
+      <div class="month-card mar">
+        <div class="month-header">
+          <div class="month-header-name">March 2026 · 403</div>
+          <div class="month-col-header">Actual</div>
+          <div class="month-col-divider"></div>
+          <div class="month-col-header">Hypothetical</div>
+        </div>
+        <div class="month-body">
+          <div class="month-row-label-col">
+            <div class="month-metric-label">Eligible</div>
+            <div class="month-metric-label">Ineligible</div>
+            <div class="month-metric-label">Successful</div>
+            <div class="month-metric-label">Rejected</div>
+            <div class="month-metric-label">CDC Resolvers</div>
+          </div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">230</span><span class="ratio">57.1% of total</span></div>
+            <div class="month-cell"><span class="val">173</span><span class="ratio">42.9% of total</span></div>
+            <div class="month-cell green"><span class="val">97</span><span class="ratio">42.2% of eligible</span></div>
+            <div class="month-cell"><span class="val">133</span><span class="ratio">57.8% of eligible</span></div>
+            <div class="month-cell amber"><span class="val">8</span><span class="ratio">4.6% of ineligible</span></div>
+          </div>
+          <div class="month-col-divider-body"></div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">238</span><span class="ratio">59.1% of total</span></div>
+            <div class="month-cell"><span class="val">165</span><span class="ratio">40.9% of total</span></div>
+            <div class="month-cell green"><span class="val">105</span><span class="ratio">44.1% of hypo eligible</span></div>
+            <div class="month-cell"><span class="val">133</span><span class="ratio">55.9% of hypo eligible</span></div>
+            <div class="month-cell" style="color:var(--muted2);font-size:11px;">moved to Successful</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- APRIL -->
+      <div class="month-card apr">
+        <div class="month-header">
+          <div class="month-header-name">April 2026 · 398</div>
+          <div class="month-col-header">Actual</div>
+          <div class="month-col-divider"></div>
+          <div class="month-col-header">Hypothetical</div>
+        </div>
+        <div class="month-body">
+          <div class="month-row-label-col">
+            <div class="month-metric-label">Eligible</div>
+            <div class="month-metric-label">Ineligible</div>
+            <div class="month-metric-label">Successful</div>
+            <div class="month-metric-label">Rejected</div>
+            <div class="month-metric-label">CDC Resolvers</div>
+          </div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">271</span><span class="ratio">68.1% of total</span></div>
+            <div class="month-cell"><span class="val">127</span><span class="ratio">31.9% of total</span></div>
+            <div class="month-cell green"><span class="val">137</span><span class="ratio">50.6% of eligible</span></div>
+            <div class="month-cell"><span class="val">134</span><span class="ratio">49.4% of eligible</span></div>
+            <div class="month-cell amber"><span class="val">15</span><span class="ratio">11.8% of ineligible</span></div>
+          </div>
+          <div class="month-col-divider-body"></div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">286</span><span class="ratio">71.9% of total</span></div>
+            <div class="month-cell"><span class="val">112</span><span class="ratio">28.1% of total</span></div>
+            <div class="month-cell green"><span class="val">152</span><span class="ratio">53.1% of hypo eligible</span></div>
+            <div class="month-cell"><span class="val">134</span><span class="ratio">46.9% of hypo eligible</span></div>
+            <div class="month-cell" style="color:var(--muted2);font-size:11px;">moved to Successful</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- MAY -->
+      <div class="month-card may">
+        <div class="month-header">
+          <div class="month-header-name">May 2026 · 335</div>
+          <div class="month-col-header">Actual</div>
+          <div class="month-col-divider"></div>
+          <div class="month-col-header">Hypothetical</div>
+        </div>
+        <div class="month-body">
+          <div class="month-row-label-col">
+            <div class="month-metric-label">Eligible</div>
+            <div class="month-metric-label">Ineligible</div>
+            <div class="month-metric-label">Successful</div>
+            <div class="month-metric-label">Rejected</div>
+            <div class="month-metric-label">CDC Resolvers</div>
+          </div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">299</span><span class="ratio">89.3% of total</span></div>
+            <div class="month-cell"><span class="val">36</span><span class="ratio">10.7% of total</span></div>
+            <div class="month-cell green"><span class="val">137</span><span class="ratio">45.8% of eligible</span></div>
+            <div class="month-cell"><span class="val">162</span><span class="ratio">54.2% of eligible</span></div>
+            <div class="month-cell amber"><span class="val">3</span><span class="ratio">8.3% of ineligible</span></div>
+          </div>
+          <div class="month-col-divider-body"></div>
+          <div class="month-data-col">
+            <div class="month-cell blue"><span class="val">302</span><span class="ratio">90.1% of total</span></div>
+            <div class="month-cell"><span class="val">33</span><span class="ratio">9.9% of total</span></div>
+            <div class="month-cell green"><span class="val">140</span><span class="ratio">46.4% of hypo eligible</span></div>
+            <div class="month-cell"><span class="val">162</span><span class="ratio">53.6% of hypo eligible</span></div>
+            <div class="month-cell" style="color:var(--muted2);font-size:11px;">moved to Successful</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ⑥ CDC CASES TABLE -->
+  <div class="section-block">
+    <div class="section-title">All 26 CDC Resolver Cases</div>
+    <div class="card">
+      <div class="card-title">7 of 26 cases cross-referenced with complaints export · context enriched where available</div>
+      <table>
+        <thead>
+          <tr>
+            <th>Month</th>
+            <th>Maid Name</th>
+            <th>Context / Reason</th>
+            <th>Category</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">JUNALEAH PANCHO ALORRO</td><td style="font-size:12px;color:var(--muted)">Legal risk — maid is client's sister</td><td><span class="badge badge-red">Legal risk</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">FLAVIA NAJJUMA</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">Je Ann Ayano Salazar</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">HERMINIA DOMINGO MANUZO</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">JOELYN DABLEO</td><td style="font-size:12px;color:var(--muted)">Client reports maid is not mentally stable; had issues with her</td><td><span class="badge badge-purple">Quality / behavior</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">Zenebu Kinde Ayalew</td><td style="font-size:12px;color:var(--muted)">Client threatening to sue if maid not cancelled (post retraction approval)</td><td><span class="badge badge-red">Legal / pressure</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">TANIA JAGTAR RAM</td><td style="font-size:12px;color:var(--muted)">Going back home due to war — resolver triggered</td><td><span class="badge badge-muted">Situation</span></td></tr>
+          <tr><td><span class="badge badge-blue">Mar</span></td><td style="font-size:12px">POLLY NALUYOMBYA</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">JOANITA NABULYA</td><td style="font-size:12px;color:var(--muted)">Was peekaboo — old client legally threatening and escalating; resolver directed cancellation</td><td><span class="badge badge-green">Post-success</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">Immaculate Mutyaba Nalweyiso</td><td style="font-size:12px;color:var(--muted)">Client cancelled Mar 13; demanding visa cancellation or absconding</td><td><span class="badge badge-red">Client escalation</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">AIMEE PALIMA DUARTE</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">Marylene Concepcion Vasquez</td><td style="font-size:12px;color:var(--muted)">Was peekaboo — resolver cancelled after placement</td><td><span class="badge badge-green">Post-success</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">ANAMAY SEGUNDO LAWA</td><td style="font-size:12px;color:var(--muted)">Resolver inquiry — no specific reason recorded</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">Noime Cabatuan</td><td style="font-size:12px;color:var(--muted)">Caused trouble at client house; left with no notice; refusing to cooperate; seeking other work</td><td><span class="badge badge-purple">Quality / behavior</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">STACY SIFA KABIBI</td><td style="font-size:12px;color:var(--muted)">Drinking and leaving kids alone — quality disqualification</td><td><span class="badge badge-purple">Quality / behavior</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">EDVICCA MAE GOLIAS RAMIREZ</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">BERNADETH MENSON TADIOS</td><td style="font-size:12px;color:var(--muted)">Visa reapplication required — technical cancellation by legal team</td><td><span class="badge badge-amber">Technical / admin</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">IVY TABADA BAJURA</td><td style="font-size:12px;color:var(--muted)">ERP link only — reason unspecified</td><td><span class="badge badge-muted">Unspecified</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">DAISY CORPUZ DULDULAO</td><td style="font-size:12px;color:var(--muted)">Maid brought strangers to client's home; stole valuables; client reported to police</td><td><span class="badge badge-red">Legal risk</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">REA GREGORIO TOMOLIN</td><td style="font-size:12px;color:var(--muted)">Signed MMR — resolver cancelled post-retraction (refund case)</td><td><span class="badge badge-green">Post-success</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">DELLY ARSUA CASEM</td><td style="font-size:12px;color:var(--muted)">Maid stole from client</td><td><span class="badge badge-red">Legal risk</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">Tamenech Terefe Zeleke</td><td style="font-size:12px;color:var(--muted)">Passport delayed — legal team instructed cancellation to reissue visa</td><td><span class="badge badge-amber">Technical / admin</span></td></tr>
+          <tr><td><span class="badge badge-gold">Apr</span></td><td style="font-size:12px">SHARIFA NAKASIITA</td><td style="font-size:12px;color:var(--muted)">Complaint filed and snoozed by resolvers</td><td><span class="badge badge-muted">Complaint</span></td></tr>
+          <tr><td><span class="badge badge-amber">May</span></td><td style="font-size:12px">SAHRA GRACE SAN JOSE PASCUAL</td><td style="font-size:12px;color:var(--muted)">Legal risk — client is maid's sister</td><td><span class="badge badge-red">Legal risk</span></td></tr>
+          <tr><td><span class="badge badge-amber">May</span></td><td style="font-size:12px">CYNTHIA ABELLAR NOFUENTE</td><td style="font-size:12px;color:var(--muted)">Maid was not good to her client — quality flagged by resolvers</td><td><span class="badge badge-purple">Quality / behavior</span></td></tr>
+          <tr><td><span class="badge badge-amber">May</span></td><td style="font-size:12px">KEDIJA DAWD MAMO</td><td style="font-size:12px;color:var(--muted)">Maid stole from client; client reported to police (post retraction)</td><td><span class="badge badge-red">Legal risk</span></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
