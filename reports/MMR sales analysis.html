@@ -1,0 +1,743 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>MMR Completed Sales Analysis · April–May 2026 · maids.cc</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700;900&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #222;
+      --border: #2e2e2e;
+      --accent: #e8c97e;
+      --accent2: #c4a45d;
+      --red: #e05c5c;
+      --green: #5cb87a;
+      --blue: #5b9bd5;
+      --purple: #b388dd;
+      --text: #f0ede8;
+      --muted: #888;
+      --serif: 'Playfair Display', Georgia, serif;
+      --sans: 'DM Sans', system-ui, sans-serif;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--sans);
+      font-size: 14px;
+      line-height: 1.65;
+      -webkit-font-smoothing: antialiased;
+    }
+    header {
+      background: linear-gradient(135deg, #0f0f0f 0%, #1c1507 60%, #0f0f0f 100%);
+      border-bottom: 1px solid var(--border);
+      padding: 56px 60px 44px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -60px; right: -60px;
+      width: 340px; height: 340px;
+      background: radial-gradient(circle, rgba(232,201,126,.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    header .eyebrow {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 14px;
+    }
+    header h1 {
+      font-family: var(--serif);
+      font-size: clamp(28px, 4vw, 46px);
+      font-weight: 900;
+      line-height: 1.1;
+      color: var(--text);
+      margin-bottom: 10px;
+    }
+    header .sub {
+      color: var(--muted);
+      font-size: 13px;
+      font-weight: 300;
+    }
+    main {
+      max-width: 1160px;
+      margin: 0 auto;
+      padding: 48px 40px 80px;
+      display: flex;
+      flex-direction: column;
+      gap: 52px;
+    }
+    .section-title {
+      font-family: var(--serif);
+      font-size: 22px;
+      font-weight: 700;
+      color: var(--accent);
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      margin-bottom: 24px;
+      letter-spacing: .01em;
+    }
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    .kpi {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 20px 22px;
+      position: relative;
+      overflow: hidden;
+      animation: fadeUp .5s ease both;
+    }
+    .kpi::after {
+      content: '';
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 3px;
+      background: var(--accent);
+      border-radius: 0 0 10px 10px;
+      opacity: .5;
+    }
+    .kpi.red::after { background: var(--red); }
+    .kpi.green::after { background: var(--green); }
+    .kpi.blue::after { background: var(--blue); }
+    .kpi.purple::after { background: var(--purple); }
+    .kpi-val {
+      font-family: var(--serif);
+      font-size: 34px;
+      font-weight: 900;
+      line-height: 1;
+      color: var(--text);
+      margin-bottom: 6px;
+    }
+    .kpi-sub {
+      font-size: 11px;
+      color: var(--muted);
+      margin-bottom: 6px;
+      font-weight: 400;
+    }
+    .kpi-label {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 24px;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 600;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 20px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    th {
+      text-align: left;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      color: var(--muted);
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border);
+    }
+    td {
+      padding: 9px 10px;
+      border-bottom: 1px solid rgba(255,255,255,.04);
+      color: var(--text);
+      vertical-align: middle;
+    }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: rgba(255,255,255,.025); }
+    .mini-bar {
+      height: 6px;
+      background: var(--accent);
+      border-radius: 3px;
+      opacity: .75;
+      display: inline-block;
+    }
+    .pct-text { color: var(--muted); font-size: 11.5px; }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 20px;
+      font-size: 10.5px;
+      font-weight: 600;
+      letter-spacing: .06em;
+      text-transform: uppercase;
+    }
+    .badge-peekaboo { background: rgba(179,136,221,.16); color: var(--purple); }
+    .badge-malayan  { background: rgba(91,155,213,.16); color: var(--blue); }
+    .badge-trial    { background: rgba(232,201,126,.16); color: var(--accent); }
+    .badge-realtime { background: rgba(92,184,122,.14); color: var(--green); }
+    .badge-instant  { background: rgba(255,255,255,.05); color: var(--muted); border: 1px solid var(--border); }
+    .exec-box, .info-box, .warn-box {
+      border-radius: 12px;
+      padding: 22px 26px;
+      font-size: 14px;
+      line-height: 1.75;
+      color: #ccc;
+    }
+    .exec-box {
+      background: linear-gradient(135deg, #1a1507 0%, #1a1a1a 100%);
+      border: 1px solid rgba(232,201,126,.25);
+    }
+    .info-box {
+      background: linear-gradient(135deg, #0e1c1a 0%, #1a1a1a 100%);
+      border: 1px solid rgba(92,184,122,.35);
+    }
+    .info-box .info-title { font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--green); margin-bottom: 10px; }
+    .warn-box {
+      background: linear-gradient(135deg, #1f0e0e 0%, #1a1a1a 100%);
+      border: 1px solid rgba(224,92,92,.35);
+    }
+    .warn-box .warn-title { font-family: var(--serif); font-size: 17px; font-weight: 700; color: var(--red); margin-bottom: 10px; }
+    strong { color: var(--text); }
+    .funnel { display: flex; flex-direction: column; gap: 8px; }
+    .funnel-row { display: flex; align-items: center; gap: 12px; }
+    .funnel-label { width: 220px; font-size: 12.5px; color: var(--muted); flex-shrink: 0; }
+    .funnel-bar-wrap { flex: 1; background: var(--surface2); border-radius: 4px; height: 22px; overflow: hidden; }
+    .funnel-bar { height: 100%; border-radius: 4px; animation: growBar 1.2s cubic-bezier(.4,0,.2,1) both; }
+    @keyframes growBar { from { width: 0 !important; } }
+    .funnel-count { width: 46px; text-align: right; font-size: 12.5px; font-weight: 600; color: var(--text); flex-shrink: 0; }
+    .funnel-pct { width: 50px; text-align: right; font-size: 11px; color: var(--muted); flex-shrink: 0; }
+    .pattern-list { display: flex; flex-direction: column; gap: 12px; }
+    .pattern-item {
+      background: var(--surface2);
+      border-radius: 10px;
+      padding: 16px 20px;
+      border-left: 3px solid var(--accent);
+    }
+    .pattern-item.red-flag { border-left-color: var(--red); }
+    .pattern-item.positive { border-left-color: var(--green); }
+    .pattern-item.conf-low { border-left-color: var(--blue); }
+    .pattern-title { font-weight: 600; font-size: 13.5px; margin-bottom: 5px; color: var(--text); }
+    .pattern-finding { font-size: 12.5px; color: var(--muted); margin-bottom: 5px; }
+    .pattern-impl { font-size: 12.5px; color: #bbb; }
+    .stat-table th, .stat-table td { text-align: right; }
+    .stat-table th:first-child, .stat-table td:first-child { text-align: left; }
+    .stat-table td.metric-val { font-family: var(--serif); font-weight: 700; color: var(--text); font-size: 14px; }
+    .stat-table td.dim { color: var(--muted); }
+    .exp-list { display: flex; flex-direction: column; gap: 14px; }
+    .exp-item { background: var(--surface2); border-radius: 10px; padding: 16px 20px; border-left: 3px solid var(--blue); }
+    .exp-label { font-size: 10.5px; font-weight: 600; letter-spacing: .1em; text-transform: uppercase; color: var(--blue); margin-bottom: 6px; }
+    .exp-hyp { font-size: 13px; margin-bottom: 8px; color: var(--text); }
+    .exp-test { font-size: 12px; color: var(--muted); margin-bottom: 6px; }
+    .exp-metric { font-size: 11.5px; color: var(--accent2); }
+    .caveat-list { list-style: none; display: flex; flex-direction: column; gap: 8px; }
+    .caveat-list li { display: flex; gap: 10px; align-items: flex-start; font-size: 12.5px; color: var(--muted); }
+    .caveat-list li::before { content: '△'; color: var(--accent); font-size: 11px; margin-top: 2px; flex-shrink: 0; }
+    .finding-list { list-style: none; display: flex; flex-direction: column; gap: 9px; }
+    .finding-list li { display: flex; gap: 10px; font-size: 12.5px; color: #ccc; align-items: flex-start; }
+    .finding-list li::before { content: '●'; color: var(--green); margin-top: 2px; flex-shrink: 0; }
+    .compact { font-size: 12px; }
+    .compact th, .compact td { padding: 7px 10px; }
+    @keyframes fadeUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    .section-block { animation: fadeUp .5s ease both; }
+    canvas { display: block; max-height: 280px; }
+    @media (max-width: 700px) {
+      main { padding: 28px 18px 60px; }
+      header { padding: 36px 22px 28px; }
+      .grid2 { grid-template-columns: 1fr; }
+      .kpi-strip { grid-template-columns: repeat(2, 1fr); }
+    }
+  </style>
+</head>
+<body>
+<header>
+  <div class="eyebrow">MMR Department · maids.cc</div>
+  <h1>Completed Sales Analysis<br />April & May 2026</h1>
+  <div class="sub">34 completed sales · 21 Malayan (V2V) · 11 Peekaboo Completed · 2 Peekaboo Trial · 1 Apr – 20 May 2026</div>
+</header>
+
+<main>
+  <!-- Data quality correction note (condensed from the two versions) -->
+  <div class="section-block">
+    <div class="section-title">Data Quality Resolution</div>
+    <div class="info-box">
+      <div class="info-title">✔ Peekaboo time‑to‑close is now measurable</div>
+      The initial dataset used <code>LAST_STATUS_CHANGE_DATE</code> for Peekaboo, producing negative durations in 11 of 13 cases. The corrected extract adds <strong>RESOLUTION_DATE</strong>, which captures the actual trial‑to‑complete transition. Per the agreed rule, this report now computes time‑to‑close as:
+      <br /><br />
+      &nbsp;&nbsp;•&nbsp;<strong>Malayan (V2V):</strong> creation → LAST_STATUS_CHANGE_DATE<br />
+      &nbsp;&nbsp;•&nbsp;<strong>Peekaboo (Completed):</strong> creation → RESOLUTION_DATE<br />
+      &nbsp;&nbsp;•&nbsp;<strong>Peekaboo (Trial):</strong> excluded (not yet resolved)
+      <br /><br />
+      With this fix, all 11 Peekaboo Completed rows yield positive durations. However, <strong>6 of those 11 were logged retroactively</strong> (creation ≈ resolution within seconds), so only 5 reflect genuine funnel time. All statistics below use only clean, positive‑duration rows.
+    </div>
+  </div>
+
+  <!-- Executive Summary -->
+  <div class="section-block">
+    <div class="section-title">Executive Summary</div>
+    <div class="exec-box">
+      In April and May 2026, MMR closed <strong>34 sales</strong>: <strong>21 Malayan (V2V)</strong> and <strong>13 Peekaboo</strong> (11 completed, 2 still in trial). Filipinas represent <strong>73.5%</strong> of all sales (25 of 34). The channel mix shifted dramatically — Peekaboo went from 17% of April completions to <strong>63% in May</strong> (partial month), making it the primary growth channel.
+      <br /><br />
+      Time‑to‑close benchmarks based on 23 clean records (18 Malayan + 5 real‑time Peekaboo):
+      <br />
+      &nbsp;&nbsp;•&nbsp;<strong>Malayan:</strong> median 5.1 d, mean 7.5 d, P80 11.5 d<br />
+      &nbsp;&nbsp;•&nbsp;<strong>Peekaboo (real‑time only):</strong> median 7.8 d, mean 6.2 d, P80 8.8 d<br />
+      &nbsp;&nbsp;•&nbsp;<strong>Combined department:</strong> median 6.2 d, mean 7.2 d, P80 10.7 d
+      <br /><br />
+      Two workflow patterns limit metric coverage: <strong>6 of 11 Peekaboo cases were logged after the fact</strong> (creation = resolution), and <strong>3 Malayan rows on 19 May appear bulk‑backdated</strong>. Together, 9 of 34 sales (26%) are excluded from duration analysis. Addressing real‑time complaint creation would recover these rows.
+    </div>
+  </div>
+
+  <!-- KPI strip -->
+  <div class="section-block">
+    <div class="section-title">Key Metrics</div>
+    <div class="kpi-strip">
+      <div class="kpi"><div class="kpi-val">34</div><div class="kpi-label">Completed Sales</div></div>
+      <div class="kpi blue"><div class="kpi-val">21</div><div class="kpi-sub">61.8%</div><div class="kpi-label">Malayan (V2V)</div></div>
+      <div class="kpi purple"><div class="kpi-val">13</div><div class="kpi-sub">11 completed · 2 trial</div><div class="kpi-label">Peekaboo</div></div>
+      <div class="kpi green"><div class="kpi-val">6.2d</div><div class="kpi-sub">Combined (N=23)</div><div class="kpi-label">Median Time‑to‑Close</div></div>
+      <div class="kpi"><div class="kpi-val">7.2d</div><div class="kpi-sub">Combined (N=23)</div><div class="kpi-label">Mean Time‑to‑Close</div></div>
+      <div class="kpi red"><div class="kpi-val">10.7d</div><div class="kpi-sub">Combined (N=23)</div><div class="kpi-label">P80 Time‑to‑Close</div></div>
+    </div>
+  </div>
+
+  <!-- Duration statistics table -->
+  <div class="section-block">
+    <div class="section-title">Time‑to‑Close — Duration Statistics</div>
+    <div class="card">
+      <div class="card-title">Creation → end date (Malayan: last status change · Peekaboo: resolution)</div>
+      <table class="stat-table">
+        <thead><tr><th>Cohort</th><th>N</th><th>Median</th><th>Mean</th><th>P80</th><th>Min</th><th>Max</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><span class="badge badge-malayan">Malayan (V2V)</span></td>
+            <td>18</td><td class="metric-val">5.07 d</td><td class="metric-val">7.51 d</td><td class="metric-val">11.45 d</td>
+            <td class="dim">3.0 h</td><td class="dim">34.1 d</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-peekaboo">Peekaboo Completed</span> <span class="badge badge-realtime">real‑time only</span></td>
+            <td>5</td><td class="metric-val">7.77 d</td><td class="metric-val">6.23 d</td><td class="metric-val">8.78 d</td>
+            <td class="dim">1.07 d</td><td class="dim">9.93 d</td>
+          </tr>
+          <tr>
+            <td><span class="badge badge-peekaboo">Peekaboo Completed</span> <span class="badge badge-instant">all 11</span></td>
+            <td>11</td><td class="metric-val dim">0.00 d</td><td class="metric-val dim">2.83 d</td><td class="metric-val dim">7.77 d</td>
+            <td class="dim">~5 s</td><td class="dim">9.93 d</td>
+          </tr>
+          <tr style="background:rgba(232,201,126,.04)">
+            <td><strong>All channels (clean)</strong></td>
+            <td><strong>23</strong></td><td class="metric-val" style="color:var(--accent)">6.24 d</td><td class="metric-val" style="color:var(--accent)">7.23 d</td><td class="metric-val" style="color:var(--accent)">10.67 d</td>
+            <td class="dim">3.0 h</td><td class="dim">34.1 d</td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted); line-height:1.6;">
+        △ The clean Peekaboo set excludes 6 cases where creation and resolution differ by &lt; 1 minute (retroactive logging). The "all 11" row is shown for transparency but is not a useful SLA. The combined row uses 18 Malayan + 5 real‑time Peekaboo.
+      </div>
+    </div>
+  </div>
+
+  <!-- Duration distribution charts -->
+  <div class="section-block grid2">
+    <div class="card">
+      <div class="card-title">Malayan (V2V) Duration Distribution (N=18)</div>
+      <canvas id="malayanHist"></canvas>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">Most sales close within a week; a long tail extends to 34 days. Median 5.1 d, P80 11.5 d.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Peekaboo Completed Duration (N=5 real‑time)</div>
+      <canvas id="peekabooHist"></canvas>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">Tightly clustered between 1–10 days. Median 7.8 d, P80 8.8 d — no extreme outliers.</div>
+    </div>
+  </div>
+
+  <!-- Channel mix & side-by-side TTC -->
+  <div class="section-block grid2">
+    <div class="card">
+      <div class="card-title">Channel Mix — April vs May</div>
+      <canvas id="channelMix"></canvas>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">April: 83% Malayan. May (partial): Peekaboo 63% of completions. Partnership funnel is rapidly scaling.</div>
+    </div>
+    <div class="card">
+      <div class="card-title">Channel Time‑to‑Close Comparison</div>
+      <canvas id="channelTTC"></canvas>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">Malayan is faster at the median, but Peekaboo is more predictable with a lower P80 and no long tail.</div>
+    </div>
+  </div>
+
+  <!-- Sale type funnel -->
+  <div class="section-block">
+    <div class="section-title">Sale Type Breakdown</div>
+    <div class="card">
+      <div class="funnel">
+        <div class="funnel-row">
+          <div class="funnel-label">Total Completed Sales</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:100%;background:#444;"></div></div>
+          <div class="funnel-count">34</div><div class="funnel-pct">100%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Malayan (V2V)</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:61.8%;background:var(--blue);opacity:.8;"></div></div>
+          <div class="funnel-count">21</div><div class="funnel-pct">61.8%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">&nbsp;&nbsp;↳ valid duration data</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:52.9%;background:var(--blue);opacity:.5;"></div></div>
+          <div class="funnel-count">18</div><div class="funnel-pct">52.9%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Peekaboo — Completed</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:32.4%;background:var(--purple);opacity:.8;"></div></div>
+          <div class="funnel-count">11</div><div class="funnel-pct">32.4%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">&nbsp;&nbsp;↳ real‑time (clean)</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:14.7%;background:var(--green);opacity:.6;"></div></div>
+          <div class="funnel-count">5</div><div class="funnel-pct">14.7%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">&nbsp;&nbsp;↳ retroactively logged</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:17.6%;background:#666;opacity:.7;"></div></div>
+          <div class="funnel-count">6</div><div class="funnel-pct">17.6%</div>
+        </div>
+        <div class="funnel-row">
+          <div class="funnel-label">Peekaboo — Trial only</div><div class="funnel-bar-wrap"><div class="funnel-bar" style="width:5.9%;background:var(--accent);opacity:.75;"></div></div>
+          <div class="funnel-count">2</div><div class="funnel-pct">5.9%</div>
+        </div>
+      </div>
+      <div style="margin-top:18px; font-size:12px; color:var(--muted);">67.6% of sales have measurable durations (23 of 34). Retroactive logging and backdated entries remove 9 records.</div>
+    </div>
+  </div>
+
+  <!-- Nationality charts -->
+  <div class="section-block grid2">
+    <div class="card">
+      <div class="card-title">Nationality Distribution (all 34)</div>
+      <canvas id="natChart"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title">Nationality × Channel</div>
+      <canvas id="natByChannel"></canvas>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">Filipinas dominate both channels; 9 of 13 Peekaboo records are Filipina.</div>
+    </div>
+  </div>
+
+  <!-- Nationality table -->
+  <div class="section-block">
+    <div class="card">
+      <div class="card-title">Nationality Breakdown</div>
+      <table>
+        <thead><tr><th>Nationality</th><th>Total</th><th>%</th><th>Malayan</th><th>Peekaboo Comp.</th><th>Peekaboo Trial</th><th>Median TTC (Malayan)</th><th></th></tr></thead>
+        <tbody id="natTable"></tbody>
+      </table>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">△ Non‑Filipina medians are based on 1–2 records — treat as anecdotal. Filipina median (6.24 d, N=13 clean Malayan) is the only reliable nationality‑level benchmark.</div>
+    </div>
+  </div>
+
+  <!-- Peekaboo detail table -->
+  <div class="section-block">
+    <div class="section-title">Peekaboo Completed — Detail</div>
+    <div class="card">
+      <div class="card-title">All 11 cases (retroactive vs. real‑time)</div>
+      <table class="compact">
+        <thead><tr><th>ID</th><th>Nationality</th><th>Creation</th><th>Resolution</th><th>Duration</th><th>Type</th></tr></thead>
+        <tbody>
+          <tr><td>688656</td><td>Filipina</td><td>2026-05-11 14:04:52</td><td>2026-05-11 14:04:57</td><td class="dim">5 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>670131</td><td>Filipina</td><td>2026-04-20 15:05:34</td><td>2026-04-20 15:05:39</td><td class="dim">5 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>690652</td><td>Ugandan</td><td>2026-05-14 11:31:17</td><td>2026-05-14 11:31:23</td><td class="dim">6 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>683285</td><td>Filipina</td><td>2026-05-05 02:52:43</td><td>2026-05-05 02:52:49</td><td class="dim">6 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>683284</td><td>Filipina</td><td>2026-05-05 02:48:50</td><td>2026-05-05 02:48:58</td><td class="dim">8 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>670124</td><td>Ugandan</td><td>2026-04-20 15:03:44</td><td>2026-04-20 15:03:54</td><td class="dim">10 s</td><td><span class="badge badge-instant">Retroactive</span></td></tr>
+          <tr><td>690168</td><td>Filipina</td><td>2026-05-13 14:10:37</td><td>2026-05-14 15:48:16</td><td><strong>1.07 d</strong></td><td><span class="badge badge-realtime">Real‑time</span></td></tr>
+          <tr><td>685939</td><td>Filipina</td><td>2026-05-07 16:07:55</td><td>2026-05-11 13:59:47</td><td><strong>3.91 d</strong></td><td><span class="badge badge-realtime">Real‑time</span></td></tr>
+          <tr><td>688914</td><td>Filipina</td><td>2026-05-11 19:13:31</td><td>2026-05-19 13:43:23</td><td><strong>7.77 d</strong></td><td><span class="badge badge-realtime">Real‑time</span></td></tr>
+          <tr><td>677123</td><td>Filipina</td><td>2026-04-28 20:37:46</td><td>2026-05-07 08:28:20</td><td><strong>8.49 d</strong></td><td><span class="badge badge-realtime">Real‑time</span></td></tr>
+          <tr><td>687459</td><td>Kenyan</td><td>2026-05-09 16:24:38</td><td>2026-05-19 14:45:39</td><td><strong>9.93 d</strong></td><td><span class="badge badge-realtime">Real‑time</span></td></tr>
+        </tbody>
+      </table>
+      <div style="margin-top:14px; font-size:11.5px; color:var(--muted);">Three pairs of retroactive cases were created within minutes of each other. No nationality pattern — the behaviour is workflow‑driven.</div>
+    </div>
+  </div>
+
+  <!-- Observed Patterns -->
+  <div class="section-block">
+    <div class="section-title">Observed Patterns</div>
+    <div class="pattern-list">
+      <div class="pattern-item positive">
+        <div class="pattern-title">Pattern 1 — Peekaboo time‑to‑close is measurable and slightly slower but more predictable (HIGH CONFIDENCE)</div>
+        <div class="pattern-finding">Real‑time Peekaboo median 7.8 d vs Malayan 5.1 d. However Peekaboo P80 is 8.8 d (vs 11.5 d) and max is 9.9 d (vs 34 d). Peekaboo has a tighter, more reliable distribution.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> Peekaboo trades a marginally slower median for far less variance — a good channel for SLAs once sample size grows.</div>
+      </div>
+      <div class="pattern-item red-flag">
+        <div class="pattern-title">Pattern 2 — 55% of Peekaboo Completed cases were logged retroactively (HIGH CONFIDENCE)</div>
+        <div class="pattern-finding">6 of 11 cases have creation ≈ resolution (≤ 10 sec). The complaint record was created after the sale was already complete, so the funnel time is invisible.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> Real‑time complaint creation (at trial start) would recover SLA coverage from 45% to 100%.</div>
+      </div>
+      <div class="pattern-item red-flag">
+        <div class="pattern-title">Pattern 3 — Three Malayan sales bulk‑backdated on 19 May (HIGH CONFIDENCE)</div>
+        <div class="pattern-finding">IDs 694048, 694050, 694059 created within 7 minutes; all have last‑status‑change before creation. Looks like retroactive batch logging.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> 26% of the dataset (9 of 34) is affected by post‑hoc complaint creation. This biases the reported time‑to‑close toward sales captured in real time.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">Pattern 4 — Channel mix flipped April→May</div>
+        <div class="pattern-finding">April 83% Malayan; May (partial) 38% Malayan. Peekaboo completions already surpass April volume.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> Peekaboo is now the primary growth channel. Operational tooling and real‑time logging must match this shift.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">Pattern 5 — Malayan time‑to‑close has a long tail</div>
+        <div class="pattern-finding">3 of 18 Malayan sales took >14 days; max 34 days. Mean is inflated (7.5 d) while median (5.1 d) and P80 (11.5 d) reflect typical performance.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> P80 = 12 days is the most defensible internal SLA for Malayan.</div>
+      </div>
+      <div class="pattern-item">
+        <div class="pattern-title">Pattern 6 — Filipina concentration</div>
+        <div class="pattern-finding">73.5% of all sales are Filipina, even higher on Peekaboo (9 of 13). Filipina supply converts at a disproportionately high rate.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> MMR volume is exposed to Filipina supply. Diversification efforts should be monitored closely.</div>
+      </div>
+      <div class="pattern-item conf-low">
+        <div class="pattern-title">Pattern 7 — Possible batch‑creation workflow (LOW CONFIDENCE)</div>
+        <div class="pattern-finding">Several retroactive Peekaboo records appear in close time pairs. May reflect agents processing multiple maids at shift start.</div>
+        <div class="pattern-impl"><strong>Implication:</strong> A quick ops check can confirm whether batch creation is routine, which would help explain the retroactive logging.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Recommendations -->
+  <div class="section-block">
+    <div class="section-title">Recommendations</div>
+    <div class="exp-list">
+      <div class="exp-item">
+        <div class="exp-label">1 — Workflow</div>
+        <div class="exp-hyp">Create Peekaboo complaint records at <strong>trial start</strong>, not at completion. This turns all retroactive rows into measurable funnel entries.</div>
+        <div class="exp-test">Operational rule: log a complaint within 24 h of a lead entering the 1000 AED trial tier.</div>
+        <div class="exp-metric">✦ Peekaboo SLA coverage rises from 5/11 (45%) toward 11/11 (100%).</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">2 — SLA</div>
+        <div class="exp-hyp">Adopt <strong>P80 = 11 days</strong> as the department‑wide soft SLA (4 out of 5 sales close ≤ 11 days).</div>
+        <div class="exp-test">Track monthly P80 by channel. Flag cases approaching 11 days for supervisor review.</div>
+        <div class="exp-metric">✦ Metric: % sales closed ≤ 11 d; target ≥ 80%.</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">3 — Audit</div>
+        <div class="exp-hyp">Investigate the 19 May Malayan batch (IDs 694048/50/59) to confirm whether retroactive logging is a recurring norm.</div>
+        <div class="exp-test">A short conversation with the agent who created them will reveal if this is standard practice or a one‑off cleanup.</div>
+        <div class="exp-metric">✦ Outcome: either confirmed data quality or a documented caveat.</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">4 — Strategic</div>
+        <div class="exp-hyp">Monitor the Malayan→Peekaboo mix. If Peekaboo sustains >70% of completions for two months, rebalance agent focus and tooling.</div>
+        <div class="exp-test">Already at 63% in a partial May; June/July will confirm if this is structural.</div>
+        <div class="exp-metric">✦ Monthly Peekaboo share of completed sales.</div>
+      </div>
+      <div class="exp-item">
+        <div class="exp-label">5 — Schema</div>
+        <div class="exp-hyp">Add a <code>PEEKABOO_TRIAL_START_DATE</code> field. Together with RESOLUTION_DATE, this would create a two‑stage funnel: trial start → completion.</div>
+        <div class="exp-test">One‑time schema change; enables trial duration analysis and early warning for stalled trials.</div>
+        <div class="exp-metric">✦ Outcome: full pipeline visibility instead of a single creation‑to‑resolution window.</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- High‑confidence findings + Caveats -->
+  <div class="section-block grid2">
+    <div>
+      <div class="section-title">High‑Confidence Findings</div>
+      <ul class="finding-list">
+        <li>34 sales closed: 21 Malayan, 11 Peekaboo Completed, 2 Trial.</li>
+        <li>Filipinas = 73.5% of sales; all other nationalities ≤ 4 each.</li>
+        <li>Malayan median TTC 5.1 d, P80 11.5 d (N=18 clean).</li>
+        <li>Peekaboo real‑time median 7.8 d, P80 8.8 d (N=5).</li>
+        <li>Combined department median 6.2 d, P80 10.7 d (N=23).</li>
+        <li>55% of Peekaboo Completed cases logged retroactively — invisible funnel time.</li>
+        <li>Channel mix flipped: May already 63% Peekaboo.</li>
+        <li>Malayan has a heavy tail (max 34 d); Peekaboo distribution is tight.</li>
+      </ul>
+    </div>
+    <div>
+      <div class="section-title">Caveats &amp; Limitations</div>
+      <ul class="caveat-list">
+        <li>Only 34 sales — breakdowns by nationality/month are indicative, not authoritative.</li>
+        <li>May data covers 1–20 May only; April vs May volume comparisons are unfair.</li>
+        <li>Peekaboo clean cohort = 5 rows; re‑evaluate with 2–3 more months of data.</li>
+        <li>Retroactive logging (9 of 34 rows) means reported TTC metrics reflect a non‑random subset of all sales.</li>
+        <li>No revenue, agent ID, or trial‑start date in this extract — financial/attribution analysis not possible.</li>
+        <li>Two Peekaboo Trial‑only cases may simply need more time; not a structural failure signal yet.</li>
+      </ul>
+    </div>
+  </div>
+</main>
+
+<script>
+  const fmtMuted = '#aaa';
+
+  // Malayan histogram
+  new Chart(document.getElementById('malayanHist'), {
+    type: 'bar',
+    data: {
+      labels: ['< 1 d', '1–2 d', '2–3 d', '3–5 d', '5–7 d', '7–14 d', '14–21 d', '21–35 d'],
+      datasets: [{
+        data: [2, 4, 1, 2, 2, 4, 2, 1],
+        backgroundColor: ['#5b9bd5','#5b9bd5','#5b9bd5','#e8c97e','#e8c97e','#c4a45d','#e05c5c','#e05c5c'],
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: fmtMuted, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+        y: { beginAtZero: true, ticks: { color: '#888', stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+
+  // Peekaboo histogram
+  new Chart(document.getElementById('peekabooHist'), {
+    type: 'bar',
+    data: {
+      labels: ['< 1 d', '1–2 d', '2–3 d', '3–5 d', '5–7 d', '7–9 d', '9–10 d'],
+      datasets: [{
+        data: [0, 1, 0, 1, 0, 2, 1],
+        backgroundColor: '#b388dd',
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: fmtMuted, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+        y: { beginAtZero: true, ticks: { color: '#888', stepSize: 1, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+
+  // Channel mix by month
+  new Chart(document.getElementById('channelMix'), {
+    type: 'bar',
+    data: {
+      labels: ['April', 'May (1–20)'],
+      datasets: [
+        { label: 'Malayan', data: [15, 6], backgroundColor: '#5b9bd5', borderRadius: 4 },
+        { label: 'Peekaboo Completed', data: [3, 8], backgroundColor: '#b388dd', borderRadius: 4 },
+        { label: 'Peekaboo Trial', data: [0, 2], backgroundColor: '#e8c97e', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { color: fmtMuted, font: { size: 11 }, padding: 12, boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, ticks: { color: fmtMuted, font: { size: 11 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: '#888', stepSize: 2, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+
+  // Channel TTC side by side
+  new Chart(document.getElementById('channelTTC'), {
+    type: 'bar',
+    data: {
+      labels: ['Median', 'Mean', 'P80', 'Max'],
+      datasets: [
+        { label: 'Malayan (N=18)', data: [5.07, 7.51, 11.45, 34.08], backgroundColor: '#5b9bd5', borderRadius: 4 },
+        { label: 'Peekaboo (N=5)', data: [7.77, 6.23, 8.78, 9.93], backgroundColor: '#b388dd', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { color: fmtMuted, font: { size: 11 }, padding: 12, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ctx.dataset.label + ': ' + ctx.parsed.y.toFixed(2) + ' d' } }
+      },
+      scales: {
+        x: { ticks: { color: fmtMuted, font: { size: 11 } }, grid: { display: false } },
+        y: { beginAtZero: true, ticks: { color: '#888', font: { size: 11 }, callback: v => v + ' d' }, grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+
+  // Nationality data
+  const natData = [
+    { name: 'Filipina',      total: 25, malayan: 16, peekabooComp: 8, peekabooTrial: 1, medMalayan: 6.24, malayanClean: 13 },
+    { name: 'Kenyan',        total: 4,  malayan: 2,  peekabooComp: 1, peekabooTrial: 1, medMalayan: 0.95, malayanClean: 2 },
+    { name: 'Ugandan',       total: 3,  malayan: 1,  peekabooComp: 2, peekabooTrial: 0, medMalayan: 6.36, malayanClean: 1 },
+    { name: 'Indian',        total: 1,  malayan: 1,  peekabooComp: 0, peekabooTrial: 0, medMalayan: 8.98, malayanClean: 1 },
+    { name: 'South African', total: 1,  malayan: 1,  peekabooComp: 0, peekabooTrial: 0, medMalayan: 1.00, malayanClean: 1 }
+  ];
+
+  // Nat totals chart
+  new Chart(document.getElementById('natChart'), {
+    type: 'bar',
+    data: {
+      labels: natData.map(d => d.name),
+      datasets: [{
+        data: natData.map(d => d.total),
+        backgroundColor: natData.map((_, i) => i === 0 ? '#e8c97e' : 'rgba(232,201,126,.4)'),
+        borderRadius: 4,
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      plugins: { legend: { display: false } },
+      scales: {
+        x: { ticks: { color: '#888', font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } },
+        y: { ticks: { color: '#ccc', font: { size: 11 } }, grid: { display: false } }
+      }
+    }
+  });
+
+  // Nat by channel
+  new Chart(document.getElementById('natByChannel'), {
+    type: 'bar',
+    data: {
+      labels: natData.map(d => d.name),
+      datasets: [
+        { label: 'Malayan', data: natData.map(d => d.malayan), backgroundColor: '#5b9bd5', borderRadius: 4 },
+        { label: 'Peekaboo Completed', data: natData.map(d => d.peekabooComp), backgroundColor: '#b388dd', borderRadius: 4 },
+        { label: 'Peekaboo Trial', data: natData.map(d => d.peekabooTrial), backgroundColor: '#e8c97e', borderRadius: 4 }
+      ]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { position: 'bottom', labels: { color: fmtMuted, font: { size: 11 }, padding: 12, boxWidth: 12 } } },
+      scales: {
+        x: { stacked: true, ticks: { color: fmtMuted, font: { size: 11 } }, grid: { display: false } },
+        y: { stacked: true, beginAtZero: true, ticks: { color: '#888', stepSize: 2, font: { size: 11 } }, grid: { color: 'rgba(255,255,255,.06)' } }
+      }
+    }
+  });
+
+  // Nationality table
+  const tbody = document.getElementById('natTable');
+  const maxTotal = natData[0].total;
+  natData.forEach(r => {
+    const pct = (r.total / 34 * 100).toFixed(1);
+    const medCell = r.malayanClean >= 3
+      ? `${r.medMalayan.toFixed(2)} d`
+      : `<span class="dim">${r.medMalayan.toFixed(2)} d (N=${r.malayanClean})</span>`;
+    tbody.innerHTML += `<tr>
+      <td>${r.name}</td>
+      <td>${r.total}</td>
+      <td class="pct-text">${pct}%</td>
+      <td>${r.malayan}</td>
+      <td>${r.peekabooComp}</td>
+      <td>${r.peekabooTrial}</td>
+      <td>${medCell}</td>
+      <td><div class="mini-bar" style="width:${Math.round(r.total/maxTotal*100)}%"></div></td>
+    </tr>`;
+  });
+</script>
+</body>
+</html>

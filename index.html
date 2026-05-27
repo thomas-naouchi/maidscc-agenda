@@ -359,18 +359,14 @@
         <span>Reports &amp; studies</span>
         <span class="dot">·</span>
         <span class="count" id="count">loading…</span>
-        <button class="refresh" id="refreshBtn" title="Refresh from GitHub">
+        <button class="refresh" id="refreshBtn" title="Refresh">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 12a9 9 0 0 1 15-6.7L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-15 6.7L3 16"/><path d="M3 21v-5h5"/></svg>
           refresh
         </button>
       </div>
     </header>
 
-    <div class="banner" id="setupBanner">
-      <strong>Setup needed:</strong> open <code>index.html</code> and set
-      <code>GITHUB.user</code> and <code>GITHUB.repo</code> at the top of the
-      &lt;script&gt; block. Until then, this page can't list your reports automatically.
-    </div>
+    <div class="banner" id="setupBanner" style="display:none"></div>
 
     <div class="banner" id="errorBanner"></div>
 
@@ -382,8 +378,8 @@
       </button>
     </div>
 
-    <div class="state" id="loadingState">Loading reports from GitHub…</div>
-    <div class="state" id="emptyState">No reports yet. Drop an HTML file in <code>reports/</code> and refresh.</div>
+    <div class="state" id="loadingState">Loading…</div>
+    <div class="state" id="emptyState">No reports yet. Add entries to <code>REPORTS_DATA</code> in <code>index.html</code>.</div>
     <div class="state" id="noMatchState">No reports match that search.</div>
 
     <div class="timeline" id="timeline"></div>
@@ -395,35 +391,46 @@
   </main>
 
   <!-- ─────────────────────────────────────────────────────────
-       HOW THIS WORKS
-       ────────────────
-       1. Set GITHUB.user / GITHUB.repo below.
-       2. Drop an HTML file in the reports/ folder of your repo.
-       3. Add these <meta> tags inside the report's <head>:
+       HOW TO ADD A REPORT
+       ────────────────────
+       1. Create an HTML file in the reports/ folder.
+       2. Add an entry to REPORTS_DATA in the <script> below:
 
-            <meta name="report-title"   content="Agent Utilization · Q1 2026">
-            <meta name="report-date"    content="2026-05-18">
-            <meta name="report-summary" content="Hour-level analysis…">
-            <meta name="report-tags"    content="Ops, staffing">
-            <meta name="report-thumb"   content="thumb.png">   (optional)
+          {
+            title:   "My Report",
+            date:    "2026-05-27",        // YYYY-MM-DD
+            summary: "Short description.",
+            tags:    ["Tag1", "Tag2"],
+            thumb:   null,                // or "reports/thumb.png"
+            href:    "reports/my-report.html",
+          },
 
-       4. Push to GitHub. Refresh this page. The report appears,
-          sorted by date, grouped by month.
-
-       Files without a report-title meta are ignored — useful for
-       drafts or shared utilities.
+       Reports are sorted by date, grouped by month.
        ───────────────────────────────────────────────────── -->
   <script>
-    const GITHUB = {
-      user:   "thomas-naouchi",         // ← your GitHub username, e.g. "maidscc-analyst"
-      repo:   "maidscc-agenda",         // ← your repo name,       e.g. "agenda"
-      branch: "main",     // branch to read from (usually "main")
-      folder: "reports",  // folder containing report HTML files
-    };
-
-    // Cache responses in localStorage for this many minutes to be
-    // kind to GitHub's rate limit (60 requests/hour unauthenticated).
-    const CACHE_MINUTES = 5;
+    // ─── report list ───────────────────────────────────────
+    // Add one entry per report. href is the relative path from index.html.
+    // All fields except title, date, and href are optional.
+    //
+    // Example entry:
+    // {
+    //   title:   "Agent Utilization · Q1 2026",
+    //   date:    "2026-01-18",          // YYYY-MM-DD
+    //   summary: "Hour-level analysis of agent utilization across all regions.",
+    //   tags:    ["Ops", "Staffing"],
+    //   thumb:   null,                  // or "reports/thumb.png"
+    //   href:    "reports/agent-utilization-q1-2026.html",
+    // },
+    const REPORTS_DATA = [
+      {
+        title:   "MMR Completed Sales Analysis · April-May 2026",
+        date:    "2026-05-24",
+        summary: "34 sales closed across Malayan (V2V) and Peekaboo channels. Filipinas represent 73.5% of all sales; Peekaboo surged from 17% of April completions to 63% in May.",
+        tags:    ["Sales", "MMR"],
+        thumb:   null,
+        href:    "reports/MMR%20sales%20analysis.html",
+      },
+    ];
 
     // ─── DOM refs ──────────────────────────────────────────
     const $count          = document.getElementById('count');
@@ -458,84 +465,6 @@
       return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
     }
     function setShow(el, on) { el.classList.toggle('show', !!on); }
-
-    // ─── cache layer ───────────────────────────────────────
-    const CACHE_KEY = 'agenda-cache-v1';
-    function loadCache() {
-      try {
-        const raw = localStorage.getItem(CACHE_KEY);
-        if (!raw) return null;
-        const obj = JSON.parse(raw);
-        if (!obj || !obj.ts || !obj.reports) return null;
-        const age = (Date.now() - obj.ts) / 60000;
-        if (age > CACHE_MINUTES) return null;
-        return obj.reports;
-      } catch (_) { return null; }
-    }
-    function saveCache(reports) {
-      try {
-        localStorage.setItem(CACHE_KEY, JSON.stringify({ ts: Date.now(), reports }));
-      } catch (_) {}
-    }
-    function clearCache() {
-      try { localStorage.removeItem(CACHE_KEY); } catch (_) {}
-    }
-
-    // ─── GitHub fetching ───────────────────────────────────
-    async function listReportFiles() {
-      const url = `https://api.github.com/repos/${GITHUB.user}/${GITHUB.repo}/contents/${GITHUB.folder}?ref=${encodeURIComponent(GITHUB.branch)}`;
-      const res = await fetch(url, { headers: { Accept: 'application/vnd.github+json' } });
-      if (res.status === 404) {
-        throw new Error(`Folder "${GITHUB.folder}" not found in ${GITHUB.user}/${GITHUB.repo}@${GITHUB.branch}. Create the folder and add a report, then refresh.`);
-      }
-      if (res.status === 403) {
-        throw new Error(`GitHub rate limit reached (60 requests/hour per IP). Try again in a few minutes — your cached view will keep working.`);
-      }
-      if (!res.ok) {
-        throw new Error(`GitHub API returned ${res.status}. Double-check GITHUB.user / GITHUB.repo / GITHUB.branch in index.html.`);
-      }
-      const data = await res.json();
-      if (!Array.isArray(data)) throw new Error('Unexpected API response — is the folder a directory?');
-      return data
-        .filter(item => item.type === 'file' && item.name.toLowerCase().endsWith('.html') && item.name.toLowerCase() !== 'index.html')
-        .map(item => ({ name: item.name, downloadUrl: item.download_url }));
-    }
-
-    async function fetchReportMeta(file) {
-      try {
-        const res = await fetch(file.downloadUrl, { cache: 'no-cache' });
-        if (!res.ok) return null;
-        const html = await res.text();
-        const doc = new DOMParser().parseFromString(html, 'text/html');
-        const m = name => {
-          const tag = doc.querySelector(`meta[name="report-${name}"]`);
-          return tag ? tag.getAttribute('content') : null;
-        };
-        const title = m('title');
-        const date  = m('date');
-        if (!title || !date) return null;  // skip files without required metadata
-
-        const tagsRaw = m('tags');
-        const tags = tagsRaw ? tagsRaw.split(',').map(s => s.trim()).filter(Boolean) : [];
-        const thumb = m('thumb');
-        return {
-          title,
-          date,
-          summary: m('summary') || '',
-          tags,
-          thumb: thumb ? `${GITHUB.folder}/${thumb}` : null,
-          href:  `${GITHUB.folder}/${file.name}`,
-        };
-      } catch (_) {
-        return null;
-      }
-    }
-
-    async function loadReportsFromGitHub() {
-      const files = await listReportFiles();
-      const metas = await Promise.all(files.map(fetchReportMeta));
-      return metas.filter(Boolean);
-    }
 
     // ─── rendering ─────────────────────────────────────────
     function groupByMonth(reports) {
@@ -597,19 +526,6 @@
     }
 
     function render() {
-      // setup-needed banner
-      const configured = GITHUB.user && GITHUB.repo;
-      setShow($setupBanner, !configured);
-      if (!configured) {
-        $timeline.innerHTML = '';
-        $timeline.classList.remove('skeleton');
-        setShow($loadingState, false);
-        setShow($emptyState, false);
-        setShow($noMatchState, false);
-        $count.textContent = '—';
-        return;
-      }
-
       // loading state
       if (LOADING) {
         setShow($loadingState, false);  // skeleton takes its place
@@ -678,43 +594,8 @@
     }
 
     // ─── load flow ─────────────────────────────────────────
-    async function load({ force } = { force: false }) {
-      hideError();
-      if (!GITHUB.user || !GITHUB.repo) {
-        LOADING = false;
-        render();
-        return;
-      }
-
-      // serve cache if fresh
-      const cached = !force && loadCache();
-      if (cached) {
-        REPORTS = cached;
-        LOADING = false;
-        render();
-        return;
-      }
-
-      LOADING = true;
-      render();
-
-      try {
-        REPORTS = await loadReportsFromGitHub();
-        saveCache(REPORTS);
-      } catch (err) {
-        // on failure, fall back to any cached data we have
-        const stale = (() => {
-          try { return JSON.parse(localStorage.getItem(CACHE_KEY) || 'null'); }
-          catch (_) { return null; }
-        })();
-        if (stale && stale.reports) {
-          REPORTS = stale.reports;
-          showError(`${err.message} Showing cached results.`);
-        } else {
-          REPORTS = [];
-          showError(err.message);
-        }
-      }
+    function load() {
+      REPORTS = REPORTS_DATA;
       LOADING = false;
       render();
     }
@@ -733,8 +614,7 @@
       render();
     });
     $refreshBtn.addEventListener('click', () => {
-      clearCache();
-      load({ force: true });
+      load();
     });
 
     load();
